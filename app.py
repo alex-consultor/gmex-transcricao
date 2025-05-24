@@ -149,9 +149,15 @@ Transcrição:
                         try:
                             self.multi_cell(0, 7, sub)
                         except FPDFException:
+                            # primeira quebra
                             mini_partes = textwrap.wrap(sub, width=50, break_long_words=True, break_on_hyphens=True)
                             for mp in mini_partes:
-                                self.multi_cell(0, 7, mp)
+                                try:
+                                    self.multi_cell(0, 7, mp)
+                                except FPDFException:
+                                    # fallback por caractere
+                                    for ch in mp:
+                                        self.multi_cell(0, 7, ch)
 
         texto_pdf = (
             prompt.replace("➕", "+")
