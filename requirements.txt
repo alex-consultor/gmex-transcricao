@@ -1,6 +1,5 @@
-streamlit
-whisper
+streamlit>=1.26.0
+openai-whisper
 python-docx
 fpdf
 Pillow
-pydub
