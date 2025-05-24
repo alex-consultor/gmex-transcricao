@@ -122,7 +122,12 @@ Transcrição:
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.download_button("📄 Baixar .TXT", data=prompt.encode("utf-8"), file_name="reuniao_gmex.txt", mime="text/plain")
+        st.download_button(
+            "📄 Baixar .TXT",
+            data=prompt.encode("utf-8"),
+            file_name="reuniao_gmex.txt",
+            mime="text/plain"
+        )
 
     with col2:
         docx_io = BytesIO()
@@ -131,36 +136,64 @@ Transcrição:
             doc.add_paragraph(linha)
         doc.save(docx_io)
         docx_io.seek(0)
-        st.download_button("📄 Baixar .DOCX", data=docx_io, file_name="reuniao_gmex.docx")
+        st.download_button(
+            "📄 Baixar .DOCX",
+            data=docx_io,
+            file_name="reuniao_gmex.docx"
+        )
 
     with col3:
-    class PDF(FPDF):
-        # … seus __init__ e add_text aqui …
+        class PDF(FPDF):
+            def __init__(self):
+                super().__init__()
+                self.add_page()
+                self.set_font("Arial", size=11)
 
-    texto_pdf = (
-        prompt
-        .replace("➕", "+")
-        .replace("✅", "[ok]")
-        .replace("❌", "[erro]")
-        .replace("🟩", "[dica]")
-    )
-    pdf = PDF()
-    pdf.add_text(texto_pdf)
+            def add_text(self, texto):
+                for linha in texto.split("\n"):
+                    partes = textwrap.wrap(linha, width=90, break_long_words=True, break_on_hyphens=True)
+                    if not partes:
+                        self.ln(7)
+                    for sub in partes:
+                        try:
+                            self.multi_cell(0, 7, sub)
+                        except FPDFException:
+                            mini_partes = textwrap.wrap(sub, width=50, break_long_words=True, break_on_hyphens=True)
+                            for mp in mini_partes:
+                                try:
+                                    self.multi_cell(0, 7, mp)
+                                except FPDFException:
+                                    for ch in mp:
+                                        try:
+                                            self.multi_cell(0, 7, ch)
+                                        except FPDFException:
+                                            pass
 
-    # gera bytes sem chamar encode em bytes
-    raw = pdf.output(dest="S")
-    pdf_bytes = raw if isinstance(raw, (bytes, bytearray)) else raw.encode("latin-1")
-
-    pdf_buffer = BytesIO(pdf_bytes)
-    st.download_button(
-        "📄 Baixar .PDF",
-        data=pdf_buffer,
-        file_name="reuniao_gmex.pdf",
-        mime="application/pdf",
-    )
+        texto_pdf = (
+            prompt
+            .replace("➕", "+")
+            .replace("✅", "[ok]")
+            .replace("❌", "[erro]")
+            .replace("🟩", "[dica]")
+        )
+        pdf = PDF()
+        pdf.add_text(texto_pdf)
+        raw = pdf.output(dest="S")
+        pdf_bytes = raw if isinstance(raw, (bytes, bytearray)) else raw.encode("latin-1")
+        pdf_buffer = BytesIO(pdf_bytes)
+        st.download_button(
+            "📄 Baixar .PDF",
+            data=pdf_buffer,
+            file_name="reuniao_gmex.pdf",
+            mime="application/pdf"
+        )
 
     st.markdown("### 💬 Ver como ChatGPT")
-    st.text_area("Copie e cole o prompt abaixo no ChatGPT:", value=prompt, height=300)
+    st.text_area(
+        "Copie e cole o prompt abaixo no ChatGPT:",
+        value=prompt,
+        height=300
+    )
 
     if st.button("🧹 Limpar tudo"):
         st.session_state.clear()
