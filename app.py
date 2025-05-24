@@ -11,6 +11,25 @@ from fpdf.errors import FPDFException
 import time
 import textwrap
 
+# ========== FUNÇÕES AUXILIARES ==========
+def DocumentToBytes(text):
+    bio = BytesIO()
+    doc = Document()
+    for line in text.split("\n"):
+        doc.add_paragraph(line)
+    doc.save(bio)
+    return bio.getvalue()
+
+
+def PDFToBytes(text):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=11)
+    for line in text.split("\n"):
+        pdf.multi_cell(0, 8, line)
+    raw = pdf.output(dest="S")
+    return raw if isinstance(raw, (bytes, bytearray)) else raw.encode("latin-1")
+
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝", layout="wide")
 
@@ -52,7 +71,6 @@ uploaded_file = st.file_uploader(
     "Suporta: MP3, WAV, M4A, AAC, OGG", type=["mp3", "wav", "m4a", "aac", "ogg"]
 )
 
-# inicializa estado
 if 'transcricao' not in st.session_state:
     st.session_state.transcricao = ""
 
@@ -101,38 +119,28 @@ if st.session_state.transcricao:
     st.subheader("📄 Transcrição Completa")
     st.text_area("", st.session_state.transcricao, height=300)
 
-    # Prompt para ChatGPT
     prompt = f"""Abaixo está a transcrição...
 {st.session_state.transcricao}
 """
     st.subheader("💬 Prompt para ChatGPT")
     st.text_area("Copie e cole no ChatGPT:", prompt, height=200)
 
-    # Exportações
     st.subheader("📤 Exportar Prompt")
     b1, b2, b3 = st.columns(3)
     b1.download_button("TXT", prompt, "transcricao.txt")
-    b2.download_button("DOCX", data=BytesIO(DocumentToBytes(prompt)), file_name="transcricao.docx")
-    b3.download_button("PDF", data=BytesIO(PDFToBytes(prompt)), file_name="transcricao.pdf")
+    b2.download_button(
+        "DOCX",
+        data=BytesIO(DocumentToBytes(prompt)),
+        file_name="transcricao.docx",
+        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+    b3.download_button(
+        "PDF",
+        data=BytesIO(PDFToBytes(prompt)),
+        file_name="transcricao.pdf",
+        mime="application/pdf"
+    )
 
 # ========= RODAPÉ ==========
 st.markdown("---")
 st.markdown("<p style='text-align:center; color:#555;'>© 2025 GMEX - Todos os direitos reservados</p>", unsafe_allow_html=True)
-
-# Helpers (mova para funções em produção)
-def DocumentToBytes(text):
-    from docx import Document
-    bio = BytesIO()
-    doc = Document()
-    for line in text.split("\n"):
-        doc.add_paragraph(line)
-    doc.save(bio)
-    return bio.getvalue()
-
-def PDFToBytes(text):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=11)
-    for line in text.split("\n"):
-        pdf.multi_cell(0, 8, line)
-    return pdf.output(dest="S")
