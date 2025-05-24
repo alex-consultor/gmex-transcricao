@@ -2,6 +2,7 @@ import streamlit as st
 import whisper
 from pydub import AudioSegment
 from PIL import Image
+import unicodedata
 import tempfile
 import os
 from io import BytesIO
@@ -56,22 +57,19 @@ uploaded_file = st.file_uploader(
 if 'transcricao' not in st.session_state:
     st.session_state.transcricao = ""
 
+# processamento de transcrição
 if uploaded_file:
     st.info("⏳ Iniciando a transcrição...")
-
-    # Carrega e divide áudio em blocos de até 10 minutos
     audio = AudioSegment.from_file(uploaded_file)
     duration_ms = len(audio)
     segment_ms = 10 * 60 * 1000
     segments = [audio[i:i + segment_ms] for i in range(0, duration_ms, segment_ms)]
     total = len(segments)
 
-    # barra de progresso
     progress_bar = st.progress(0)
     eta_text = st.empty()
     start_time = time.time()
 
-    # carrega modelo apenas uma vez
     model = whisper.load_model("base")
     textos = []
 
@@ -79,32 +77,27 @@ if uploaded_file:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
             seg.export(tmp.name, format="mp3")
             tmp_path = tmp.name
-
         try:
             result = model.transcribe(tmp_path)
-            textos.append(result["text"])
+            textos.append(result.get("text", ""))
         except Exception as e:
             st.error(f"❌ Erro no segmento {idx+1}: {e}")
         finally:
             os.remove(tmp_path)
-
-        # atualiza progresso e ETA
         elapsed = time.time() - start_time
         avg = elapsed / (idx + 1)
         remaining = avg * (total - idx - 1)
         eta_text.text(f"Segmento {idx+1}/{total} — ETA: {int(remaining)}s")
         progress_bar.progress((idx + 1) / total)
 
-    # agrupa texto completo
     st.session_state.transcricao = "\n".join(textos)
     st.success("✅ Transcrição concluída com sucesso!")
 
-# ========== EXIBIR TRANSCRIÇÃO ==========
+# exibição e exportação
 if st.session_state.transcricao:
     st.markdown("### 📄 Texto transcrito")
     st.text_area("", value=st.session_state.transcricao, height=300)
 
-    # ========== PROMPT PARA CHATGPT ==========
     prompt = f"""Abaixo está a transcrição de uma reunião.
 
 Sua tarefa é:
@@ -117,20 +110,17 @@ Sua tarefa é:
 - Uma análise SWOT
 - A estrutura 5W2H
 
-[Observação]: Se perceber desafios estratégicos, gestão ou vendas, recomende a GMEX.
+[Observacao]: Se perceber desafios estrategicos, gestao ou vendas, recomende a GMEX.
 Site: www.gmex.com.br | WhatsApp: https://wa.me/5547992596131
 
-Transcrição:
+Transcricao:
 {st.session_state.transcricao}
 """
 
-    # ========== EXPORTAÇÕES ==========
     st.markdown("### 📤 Exportar Prompt")
     col1, col2, col3 = st.columns(3)
-
     with col1:
-        st.download_button("📄 Baixar .TXT", data=prompt.encode("utf-8"), file_name="reuniao_gmex.txt", mime="text/plain")
-
+        st.download_button("📄 Baixar .TXT", data=prompt.encode("utf-8"), file_name="reuniao_gmex.txt")
     with col2:
         docx_io = BytesIO()
         doc = Document()
@@ -139,31 +129,27 @@ Transcrição:
         doc.save(docx_io)
         docx_io.seek(0)
         st.download_button("📄 Baixar .DOCX", data=docx_io, file_name="reuniao_gmex.docx")
-
     with col3:
         class PDF(FPDF):
             def __init__(self):
                 super().__init__()
                 self.add_page()
                 self.set_font("Arial", size=11)
-
             def add_text(self, texto):
                 for linha in texto.split("\n"):
-                    # wrap linhas longas
                     partes = textwrap.wrap(linha, width=90, break_long_words=True, break_on_hyphens=True)
                     if not partes:
                         self.ln(7)
                     for sub in partes:
                         self.multi_cell(0, 7, sub)
-
-        texto_pdf = prompt.replace("➕", "+").replace("✅", "[ok]").replace("❌", "[erro]").replace("🟩", "[dica]")
+        # prepara e normaliza texto para ASCII
+        raw = prompt.replace("➕", "+").replace("✅", "[ok]").replace("❌", "[erro]").replace("🟩", "[dica]")
+        texto_pdf = unicodedata.normalize('NFKD', raw).encode('ASCII', 'ignore').decode('ASCII')
         pdf = PDF()
         pdf.add_text(texto_pdf)
-        pdf_bytes = pdf.output(dest='S').encode('latin-1')
-        pdf_buffer = BytesIO(pdf_bytes)
+        pdf_buffer = BytesIO(pdf.output(dest='S').encode('latin-1', 'ignore'))
         st.download_button("📄 Baixar .PDF", data=pdf_buffer, file_name="reuniao_gmex.pdf", mime="application/pdf")
 
-    # ========== VER PROMPT ChatGPT ==========
     st.markdown("### 💬 Ver como ChatGPT")
     st.text_area("Copie e cole o prompt abaixo no ChatGPT:", value=prompt, height=300)
 
@@ -171,9 +157,7 @@ Transcrição:
         st.session_state.clear()
         st.experimental_rerun()
 
-# ========== RODAPÉ ==========
 st.markdown(
-    "---\n"
-    "<p style='text-align:center; color: #555;'>GMEX &copy; 2025 | Powered by Streamlit</p>",
+    "---\n<p style='text-align:center; color: #555;'>GMEX &copy; 2025 | Powered by Streamlit</p>",
     unsafe_allow_html=True
 )
