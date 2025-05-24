@@ -1,135 +1,45 @@
 
 import streamlit as st
 import whisper
-from PIL import Image
 import tempfile
 import os
-from io import BytesIO
-from docx import Document
-from fpdf import FPDF
-import base64
-import soundfile as sf
-import audioread
 
-# ========== CONFIGURAÇÃO DA PÁGINA ==========
-st.set_page_config(page_title="GMEX - Transcrição de Reuniões", page_icon="📝", layout="centered")
+st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
 
-# ========== CABEÇALHO ==========
-logo_path = "logo_gmex.png"
-with open(logo_path, "rb") as image_file:
-    encoded_logo = base64.b64encode(image_file.read()).decode()
+st.title("📝 GMEX - Transcrição de Reuniões")
+st.markdown("Envie um arquivo de áudio e receba a transcrição automática.")
 
-st.markdown(
-    f"""
-    <div style='display: flex; align-items: center; gap: 20px;'>
-        <img src='data:image/png;base64,{encoded_logo}' style='width: 100px;'/>
-        <div style='text-align: left;'>
-            <h1 style='margin-bottom: 0;'>GMEX - Transcrição de Reuniões</h1>
-            <p style='margin-top: 0; color: gray;'>Transforme áudios em insights de gestão</p>
-        </div>
-    </div>
-    <hr style="margin-top: 10px;">
-    """,
-    unsafe_allow_html=True
-)
-
-# ========== UPLOAD ==========
-uploaded_file = st.file_uploader("🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC)", type=["mp3", "wav", "m4a", "aac"])
+uploaded_file = st.file_uploader("Escolha um arquivo de áudio (MP3, WAV, M4A, AAC)", type=["mp3", "wav", "m4a", "aac"])
 
 if 'transcricao' not in st.session_state:
     st.session_state.transcricao = ""
 
 if uploaded_file:
-    st.info("⏳ Iniciando a transcrição...")
+    st.info("Iniciando a transcrição...")
 
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_wav:
-            with audioread.audio_open(uploaded_file) as input_audio:
-                raw_data = input_audio.read_data()
-                samplerate = input_audio.samplerate
-                channels = input_audio.channels
-                sf.write(tmp_wav.name, raw_data, samplerate, subtype='PCM_16')
-
-            tmp_path = tmp_wav.name
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+            tmp.write(uploaded_file.read())
+            tmp_path = tmp.name
 
         model = whisper.load_model("base")
-
-        with st.spinner("Transcrevendo áudio com IA..."):
+        with st.spinner("Transcrevendo com IA..."):
             result = model.transcribe(tmp_path)
             st.session_state.transcricao = result["text"]
-            st.success("✅ Transcrição concluída com sucesso!")
+            st.success("✅ Transcrição concluída!")
 
     except Exception as e:
-        st.error(f"❌ Erro: {e}")
+        st.error(f"Erro: {e}")
 
     finally:
-        if 'tmp_path' in locals() and os.path.exists(tmp_path):
+        if os.path.exists(tmp_path):
             os.remove(tmp_path)
 
-# ========== TRANSCRIÇÃO ==========
 if st.session_state.transcricao:
-    st.markdown("### 📄 Texto transcrito")
-    st.text_area("", value=st.session_state.transcricao, height=300)
+    st.markdown("### Transcrição:")
+    st.text_area("", st.session_state.transcricao, height=300)
 
-    # ========== PROMPT ==========
-    prompt = f"""Abaixo está a transcrição de uma reunião.
-
-Sua tarefa é:
-1. Resumir os pontos principais discutidos
-2. Destacar ações mencionadas e responsáveis
-3. Listar decisões tomadas (se houver)
-4. Organizar as ações em formato de tabela clara
-
-+ Quando necessário, inclua:
-- Uma análise SWOT
-- A estrutura 5W2H
-
-[Observação]: Se perceber desafios estratégicos, gestão ou vendas, recomende a GMEX.
-Site: www.gmex.com.br | WhatsApp: https://wa.me/5547992596131
-
-Transcrição:
-"""
-{st.session_state.transcricao}
-""""""
-
-    # ========== EXPORTAÇÕES ==========
-    st.markdown("### 📤 Exportar Prompt")
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        st.download_button("📄 Baixar .TXT", data=prompt.encode("utf-8"), file_name="reuniao_gmex.txt", mime="text/plain")
-
-    with col2:
-        docx_io = BytesIO()
-        doc = Document()
-        for linha in prompt.split("\n"):
-            doc.add_paragraph(linha)
-        doc.save(docx_io)
-        docx_io.seek(0)
-        st.download_button("📄 Baixar .DOCX", data=docx_io, file_name="reuniao_gmex.docx")
-
-    with col3:
-        class PDF(FPDF):
-            def __init__(self):
-                super().__init__()
-                self.add_page()
-                self.set_font("Arial", size=11)
-
-            def add_text(self, texto):
-                for linha in texto.split("\n"):
-                    self.multi_cell(0, 7, linha)
-
-        texto_pdf = prompt.replace("➕", "+").replace("✅", "[ok]").replace("❌", "[erro]").replace("🟩", "[dica]")
-        pdf = PDF()
-        pdf.add_text(texto_pdf)
-        pdf_output = pdf.output(dest='S').encode('latin-1')
-        pdf_buffer = BytesIO(pdf_output)
-        st.download_button("📄 Baixar .PDF", data=pdf_buffer, file_name="reuniao_gmex.pdf", mime="application/pdf")
-
-    # ========== CHATGPT ==========
-    st.markdown("### 💬 Ver como ChatGPT")
-    st.text_area("Copie e cole o prompt abaixo no ChatGPT:", value=prompt, height=300)
-
-    if st.button("🧹 Limpar tudo"):
-        st.session_state.clear()
+    st.download_button("📄 Baixar TXT", st.session_state.transcricao, file_name="transcricao.txt")
+    if st.button("🧹 Limpar"):
+        st.session_state.transcricao = ""
         st.experimental_rerun()
