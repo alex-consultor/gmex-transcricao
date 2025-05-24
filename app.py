@@ -99,32 +99,58 @@ if st.session_state.transcricao:
         doc.save(bio)
         st.download_button("DOCX", bio.getvalue(), "reuniao.docx")
     with c3:
-        # PDF com fallback
         class PDF(FPDF):
             def __init__(self):
-                super().__init__(); self.add_page(); self.set_font("Arial", size=11)
-            def add_text(self, txt):
-                for line in txt.split("\n"):
-                    partes = textwrap.wrap(line, width=90, break_long_words=True, break_on_hyphens=True)
-                    if not partes: self.ln(7)
+                super().__init__()
+                self.add_page()
+                self.set_font("Arial", size=11)
+
+            def add_text(self, texto):
+                for linha in texto.split("\n"):
+                    partes = textwrap.wrap(linha, width=90, break_long_words=True, break_on_hyphens=True)
+                    if not partes:
+                        self.ln(7)
                     for sub in partes:
-                        try: self.multi_cell(0,7,sub)
+                        try:
+                            self.multi_cell(0, 7, sub)
                         except FPDFException:
-                            mini = textwrap.wrap(sub, width=50, break_long_words=True, break_on_hyphens=True)
-                            for m in mini:
-                                try: self.multi_cell(0,7,m)
-                                except FPDFException: pass
-        pdf = PDF(); pdf.add_text(prompt)
-        raw = pdf.output(dest='S')
-        data = raw if isinstance(raw, (bytes,bytearray)) else raw.encode('latin-1')
-        st.download_button("PDF", data, "reuniao.pdf")
+                            mini_partes = textwrap.wrap(sub, width=50, break_long_words=True, break_on_hyphens=True)
+                            for mp in mini_partes:
+                                try:
+                                    self.multi_cell(0, 7, mp)
+                                except FPDFException:
+                                    for ch in mp:
+                                        try:
+                                            self.multi_cell(0, 7, ch)
+                                        except FPDFException:
+                                            pass
 
-    st.markdown("### 💬 Prompt para ChatGPT")
-    st.text_area("Copie e cole:", prompt, height=200)
+        texto_pdf = (
+            prompt
+            .replace("➕", "+")
+            .replace("✅", "[ok]")
+            .replace("❌", "[erro]")
+            .replace("🟩", "[dica]")
+        )
+        pdf = PDF()
+        pdf.add_text(texto_pdf)
+        raw = pdf.output(dest="S")
+        pdf_bytes = raw if isinstance(raw, (bytes, bytearray)) else raw.encode("latin-1")
+        pdf_buffer = BytesIO(pdf_bytes)
+        st.download_button(
+            "📄 Baixar .PDF",
+            data=pdf_buffer,
+            file_name="reuniao_gmex.pdf",
+            mime="application/pdf"
+        )
 
-    if st.button("Limpar tudo"):
-        st.session_state.clear(); st.experimental_rerun()
+    st.markdown("### 💬 Ver como ChatGPT")
+    st.text_area(
+        "Copie e cole o prompt abaixo no ChatGPT:",
+        value=prompt,
+        height=300
+    )
 
-# ========== RODAPÉ ==========
-st.markdown("---")
-st.markdown("<p style='text-align:center;color:#555;'>GMEX © 2025</p>", unsafe_allow_html=True)
+    if st.button("🧹 Limpar tudo"):
+        st.session_state.clear()
+        st.experimental_rerun()
