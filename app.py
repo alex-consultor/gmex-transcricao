@@ -1,85 +1,78 @@
 import streamlit as st
 import whisper
+from PIL import Image
 import tempfile
 import os
-from PIL import Image
 from io import BytesIO
 from docx import Document
 from fpdf import FPDF
-from pydub import AudioSegment
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
 
-# ========== CABEÇALHO COM LOGO ==========
-logo_path = "logo_gmex.png"
-if os.path.exists(logo_path):
-    logo = Image.open(logo_path)
-    st.image(logo, width=120)
-
+# ========== ESTILO VISUAL MODERNO ==========
 st.markdown("""
-<h2 style='margin-top: 0;'>📝 GMEX - Transcrição de Reuniões</h2>
-<p>Transforme reuniões em texto com um clique.</p>
+    <style>
+    .main { background-color: #f7fafd; }
+    .stButton>button {
+        color: white;
+        background: #3b82f6;
+        border-radius: 8px;
+        font-size: 1.1em;
+        padding: 0.5em 2em;
+    }
+    .stTextInput>div>div>input {
+        font-size: 1.1em;
+        border-radius: 6px;
+    }
+    h1, h2, h3, h4, h5 {
+        color: #22223b;
+        font-family: 'Inter', sans-serif;
+    }
+    </style>
 """, unsafe_allow_html=True)
+
+# ========== BARRA LATERAL ==========
+st.sidebar.image("logo_gmex.png", width=120)
+st.sidebar.markdown("## GMEX - Transcrição de Áudio")
+st.sidebar.markdown("Transforme reuniões em texto com um clique.")
+st.sidebar.markdown("---")
+st.sidebar.markdown("**Desenvolvido por:** alex-consultor")
+
+# ========== CABEÇALHO ==========
+st.title("📝 GMEX - Transcrição de Reuniões")
+st.markdown("<p>Transforme reuniões em texto com um clique.</p>", unsafe_allow_html=True)
 
 # ========== UPLOAD ==========
 uploaded_file = st.file_uploader(
-    "🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC, OGG)",
-    type=["mp3", "wav", "m4a", "aac", "ogg"]
+    "🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC)", 
+    type=["mp3", "wav", "m4a", "aac"]
 )
 
 if 'transcricao' not in st.session_state:
     st.session_state.transcricao = ""
 
-def transcreve_em_blocos(audio_path, bloco_min=10):
-    audio = AudioSegment.from_file(audio_path)
-    bloco_ms = bloco_min * 60 * 1000  # bloco em milissegundos
-    chunks = [audio[i:i+bloco_ms] for i in range(0, len(audio), bloco_ms)]
-    model = whisper.load_model("base")
-    transcricao_total = ""
-    for idx, chunk in enumerate(chunks):
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_chunk:
-            chunk.export(temp_chunk.name, format="wav")
-            result = model.transcribe(temp_chunk.name)
-            transcricao_total += f"[Bloco {idx+1}]\n{result['text']}\n\n"
-            os.remove(temp_chunk.name)
-    return transcricao_total
-
 if uploaded_file:
     st.info("⏳ Iniciando a transcrição...")
 
-    tmp_audio_path = None
-    wav_path = None
+    # Salva temporariamente o arquivo de áudio
+    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[-1]) as tmp:
+        tmp.write(uploaded_file.read())
+        tmp_path = tmp.name
 
     try:
-        # Salva o arquivo de upload temporariamente
-        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[-1]) as tmp_audio:
-            tmp_audio.write(uploaded_file.read())
-            tmp_audio_path = tmp_audio.name
-
-        # Se não for WAV, converte para WAV usando ffmpeg
-        wav_path = tmp_audio_path
-        if not tmp_audio_path.lower().endswith('.wav'):
-            wav_path = tmp_audio_path + '.wav'
-            import subprocess
-            subprocess.run([
-                'ffmpeg', '-y', '-i', tmp_audio_path, wav_path
-            ], check=True)
-
-        # Transcreve em blocos (exemplo: blocos de 10 minutos)
-        with st.spinner("Transcrevendo áudio em blocos com IA..."):
-            st.session_state.transcricao = transcreve_em_blocos(wav_path, bloco_min=10)
+        model = whisper.load_model("base")
+        with st.spinner("Transcrevendo áudio com IA..."):
+            # O Whisper aceita a maioria dos formatos diretamente!
+            result = model.transcribe(tmp_path)
+            st.session_state.transcricao = result["text"]
             st.success("✅ Transcrição concluída com sucesso!")
 
     except Exception as e:
         st.error(f"❌ Erro: {e}")
 
     finally:
-        # Limpa arquivos temporários criados
-        if tmp_audio_path and os.path.exists(tmp_audio_path):
-            os.remove(tmp_audio_path)
-        if wav_path and wav_path != tmp_audio_path and os.path.exists(wav_path):
-            os.remove(wav_path)
+        os.remove(tmp_path)
 
 # ========== TRANSCRIÇÃO ==========
 if st.session_state.transcricao:
@@ -103,8 +96,9 @@ Sua tarefa é:
 Site: www.gmex.com.br | WhatsApp: https://wa.me/5547992596131
 
 Transcrição:
+\"\"\"
 {st.session_state.transcricao}
-"""
+\"\"\""""
 
     # ========== EXPORTAÇÕES ==========
     st.markdown("### 📤 Exportar Prompt")
@@ -131,11 +125,7 @@ Transcrição:
 
             def add_text(self, texto):
                 for linha in texto.split("\n"):
-                    # Limpa caracteres não-latinos para evitar erro de encoding
-                    try:
-                        self.multi_cell(0, 7, linha.encode('latin-1', 'replace').decode('latin-1'))
-                    except:
-                        self.multi_cell(0, 7, linha)
+                    self.multi_cell(0, 7, linha)
 
         texto_pdf = prompt.replace("➕", "+").replace("✅", "[ok]").replace("❌", "[erro]").replace("🟩", "[dica]")
         pdf = PDF()
@@ -151,3 +141,9 @@ Transcrição:
     if st.button("🧹 Limpar tudo"):
         st.session_state.clear()
         st.experimental_rerun()
+
+# ========== RODAPÉ BONITO ==========
+st.markdown("""
+---
+<p style='text-align:center; color: #555;'>GMEX &copy; 2025 | Powered by Streamlit</p>
+""", unsafe_allow_html=True)
