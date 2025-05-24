@@ -170,6 +170,11 @@ if st.session_state.transcricao:
         height=300
     )
 
-    if st.button("🧹 Limpar tudo"):
-        st.session_state.clear()
-        st.experimental_rerun()
+    # Ao clicar no botão, define uma flag
+if st.button("🧹 Limpar tudo"):
+    st.session_state["limpar"] = True
+    st.experimental_rerun()
+
+# Na próxima execução, verifica e limpa com segurança
+if st.session_state.get("limpar"):
+    st.session_state.clear()
