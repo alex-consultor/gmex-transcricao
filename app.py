@@ -169,7 +169,8 @@ Transcrição:
         )
         pdf = PDF()
         pdf.add_text(texto_pdf)
-        pdf_bytes = pdf.output(dest='S').encode('latin-1')
+        raw = pdf.output(dest='S')
+pdf_bytes = raw if isinstance(raw, (bytes, bytearray)) else raw.encode('latin-1')
         pdf_buffer = BytesIO(pdf_bytes)
         st.download_button("📄 Baixar .PDF", data=pdf_buffer, file_name="reuniao_gmex.pdf", mime="application/pdf")
 
