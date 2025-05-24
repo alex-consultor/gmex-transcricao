@@ -1,6 +1,9 @@
 streamlit
 openai-whisper
+pydub
 python-docx
 fpdf
 Pillow
 torch
+audioread
+soundfile
