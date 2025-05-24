@@ -55,6 +55,19 @@ uploaded_file = st.file_uploader(
     "🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC, OGG)",
     type=["mp3", "wav", "m4a", "aac", "ogg"]
 )
+st.warning("⚠️ Arquivo deve ter no máximo 200MB. Se o seu áudio for maior, divida antes de fazer o upload.")
+
+with st.expander("💡 Precisa de ajuda para dividir o áudio?"):
+    st.markdown("""
+    Você pode baixar uma ferramenta simples que criamos para dividir seu áudio em partes menores de 10 minutos.
+
+    👉 [Clique aqui para baixar o Divisor de Áudio GMEX (.exe)](https://seu-link.com/divisor_audio_gmex.exe)
+
+    Após baixar:
+    1. Execute o programa
+    2. Selecione seu arquivo `.m4a`, `.mp3` etc.
+    3. Ele criará arquivos menores prontos para upload neste app
+    """)
 
 if 'transcricao' not in st.session_state:
     st.session_state.transcricao = ""
