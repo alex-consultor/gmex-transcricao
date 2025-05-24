@@ -7,7 +7,7 @@ import os
 from io import BytesIO
 from docx import Document
 from fpdf import FPDF
-from fpdf.errors import FPDFException
+from fpdf import FPDF
 import textwrap
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
