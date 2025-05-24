@@ -1,26 +1,37 @@
+
 import streamlit as st
 import whisper
-from pydub import AudioSegment
 from PIL import Image
 import tempfile
 import os
 from io import BytesIO
 from docx import Document
 from fpdf import FPDF
+import base64
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
-st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
+st.set_page_config(page_title="GMEX - Transcrição de Reuniões", page_icon="📝", layout="centered")
 
-# ========== CABEÇALHO COM LOGO MAIOR E ALINHAMENTO ==========
-logo = Image.open("logo_gmex.png")
-st.image(logo, width=120)
-st.markdown("""
-<h2 style='margin-top: 0;'>📝 GMEX - Transcrição de Reuniões</h2>
-<p>Transforme reuniões em texto com um clique.</p>
-""", unsafe_allow_html=True)
+# ========== CABEÇALHO ==========
+logo_path = "logo_gmex.png"
+with open(logo_path, "rb") as image_file:
+    encoded_logo = base64.b64encode(image_file.read()).decode()
+
+st.markdown(
+    f"""
+    <div style='display: flex; align-items: center; gap: 20px;'>
+        <img src='data:image/png;base64,{encoded_logo}' style='width: 100px;'/>
+        <div style='text-align: left;'>
+            <h1 style='margin-bottom: 0;'>GMEX - Transcrição de Reuniões</h1>
+            <p style='margin-top: 0; color: gray;'>Transforme áudios em insights de gestão</p>
+        </div>
+    </div>
+    <hr style="margin-top: 10px;">
+    """,
+    unsafe_allow_html=True
+)
 
 # ========== UPLOAD ==========
-AudioSegment.converter = r"C:\\ProjetosGMEX-Transcricao-Web\\ffmpeg\\bin\\ffmpeg.exe"
 uploaded_file = st.file_uploader("🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC)", type=["mp3", "wav", "m4a", "aac"])
 
 if 'transcricao' not in st.session_state:
@@ -29,20 +40,15 @@ if 'transcricao' not in st.session_state:
 if uploaded_file:
     st.info("⏳ Iniciando a transcrição...")
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=uploaded_file.name[-4:]) as tmp:
         tmp.write(uploaded_file.read())
         tmp_path = tmp.name
 
-    wav_path = None
-
     try:
         model = whisper.load_model("base")
-        audio = AudioSegment.from_file(tmp_path)
-        wav_path = tmp_path.replace(".mp3", ".wav")
-        audio.export(wav_path, format="wav")
 
         with st.spinner("Transcrevendo áudio com IA..."):
-            result = model.transcribe(wav_path)
+            result = model.transcribe(tmp_path)
             st.session_state.transcricao = result["text"]
             st.success("✅ Transcrição concluída com sucesso!")
 
@@ -51,8 +57,6 @@ if uploaded_file:
 
     finally:
         os.remove(tmp_path)
-        if wav_path and os.path.exists(wav_path):
-            os.remove(wav_path)
 
 # ========== TRANSCRIÇÃO ==========
 if st.session_state.transcricao:
@@ -76,9 +80,9 @@ Sua tarefa é:
 Site: www.gmex.com.br | WhatsApp: https://wa.me/5547992596131
 
 Transcrição:
-\"\"\"
+"""
 {st.session_state.transcricao}
-\"\"\""""
+""""""
 
     # ========== EXPORTAÇÕES ==========
     st.markdown("### 📤 Exportar Prompt")
