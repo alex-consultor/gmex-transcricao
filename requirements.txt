@@ -16,5 +16,5 @@ fpdf2
 # para carregar imagens
 pillow
 
-+# processamento de áudio
-+pydub
+# processamento de áudio
+pydub
