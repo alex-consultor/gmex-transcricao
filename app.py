@@ -1,10 +1,7 @@
-
 import streamlit as st
 import whisper
 import tempfile
 import os
-import audioread
-import soundfile as sf
 from PIL import Image
 from io import BytesIO
 from docx import Document
@@ -33,16 +30,27 @@ if 'transcricao' not in st.session_state:
 if uploaded_file:
     st.info("⏳ Iniciando a transcrição...")
 
+    tmp_audio_path = None
+    wav_path = None
+
     try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_wav:
-            with audioread.audio_open(uploaded_file) as input_audio:
-                data = input_audio.read_data()
-                sf.write(tmp_wav.name, data, input_audio.samplerate, subtype='PCM_16')
-            tmp_path = tmp_wav.name
+        # Salva o arquivo de upload temporariamente
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[-1]) as tmp_audio:
+            tmp_audio.write(uploaded_file.read())
+            tmp_audio_path = tmp_audio.name
+
+        # Se não for WAV, converte para WAV usando ffmpeg
+        wav_path = tmp_audio_path
+        if not tmp_audio_path.lower().endswith('.wav'):
+            wav_path = tmp_audio_path + '.wav'
+            import subprocess
+            subprocess.run([
+                'ffmpeg', '-y', '-i', tmp_audio_path, wav_path
+            ], check=True)
 
         model = whisper.load_model("base")
         with st.spinner("Transcrevendo áudio com IA..."):
-            result = model.transcribe(tmp_path)
+            result = model.transcribe(wav_path)
             st.session_state.transcricao = result["text"]
             st.success("✅ Transcrição concluída com sucesso!")
 
@@ -50,8 +58,11 @@ if uploaded_file:
         st.error(f"❌ Erro: {e}")
 
     finally:
-        if os.path.exists(tmp_path):
-            os.remove(tmp_path)
+        # Limpa arquivos temporários criados
+        if tmp_audio_path and os.path.exists(tmp_audio_path):
+            os.remove(tmp_audio_path)
+        if wav_path and wav_path != tmp_audio_path and os.path.exists(wav_path):
+            os.remove(wav_path)
 
 # ========== TRANSCRIÇÃO ==========
 if st.session_state.transcricao:
@@ -75,9 +86,8 @@ Sua tarefa é:
 Site: www.gmex.com.br | WhatsApp: https://wa.me/5547992596131
 
 Transcrição:
-"""
 {st.session_state.transcricao}
-""""""
+"""
 
     # ========== EXPORTAÇÕES ==========
     st.markdown("### 📤 Exportar Prompt")
@@ -104,7 +114,11 @@ Transcrição:
 
             def add_text(self, texto):
                 for linha in texto.split("\n"):
-                    self.multi_cell(0, 7, linha)
+                    # Limpa caracteres não-latinos para evitar erro de encoding
+                    try:
+                        self.multi_cell(0, 7, linha.encode('latin-1', 'replace').decode('latin-1'))
+                    except:
+                        self.multi_cell(0, 7, linha)
 
         texto_pdf = prompt.replace("➕", "+").replace("✅", "[ok]").replace("❌", "[erro]").replace("🟩", "[dica]")
         pdf = PDF()
