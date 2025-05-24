@@ -1,13 +1,14 @@
 --find-links https://download.pytorch.org/whl/cpu/torch_stable.html
-torch==2.1.0+cpu
-torchaudio==2.1.0+cpu
+ torch==2.1.0+cpu
+ torchaudio==2.1.0+cpu
 
-openai-whisper
-streamlit>=1.20
-ffmpeg-python
-python-docx
-fpdf2
-pillow
-pydub
-streamlit-audio-recorder
-imageio-ffmpeg
+ openai-whisper
+ streamlit>=1.20
+ ffmpeg-python
+ python-docx
+ fpdf2
+ pillow
+ pydub
+-imageio-ffmpeg
+-streamlit-audio-recorder
++imageio-ffmpeg
