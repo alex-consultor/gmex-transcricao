@@ -10,6 +10,7 @@ from docx import Document
 from fpdf import FPDF
 import time
 import textwrap
+from fpdf.errors import FPDFException
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
@@ -131,17 +132,30 @@ Transcricao:
         st.download_button("📄 Baixar .DOCX", data=docx_io, file_name="reuniao_gmex.docx")
     with col3:
         class PDF(FPDF):
-            def __init__(self):
-                super().__init__()
-                self.add_page()
-                self.set_font("Arial", size=11)
-            def add_text(self, texto):
-                for linha in texto.split("\n"):
-                    partes = textwrap.wrap(linha, width=90, break_long_words=True, break_on_hyphens=True)
-                    if not partes:
-                        self.ln(7)
-                    for sub in partes:
-                        self.multi_cell(0, 7, sub)
+    def __init__(self):
+        super().__init__()
+        self.add_page()
+        self.set_font("Arial", size=11)
+
+    def add_text(self, texto):
+        for linha in texto.split("\n"):
+            # primeira quebra em 90 caracteres
+            partes = textwrap.wrap(linha, width=90,
+                                   break_long_words=True,
+                                   break_on_hyphens=True)
+            if not partes:
+                self.ln(7)
+            for sub in partes:
+                try:
+                    # tenta escrever normalmente
+                    self.multi_cell(0, 7, sub)
+                except FPDFException:
+                    # fallback: quebra em pedaços de 50 chars
+                    mini_partes = textwrap.wrap(sub, width=50,
+                                                break_long_words=True,
+                                                break_on_hyphens=True)
+                    for mp in mini_partes:
+                        self.multi_cell(0, 7, mp)
         # prepara e normaliza texto para ASCII
         raw = prompt.replace("➕", "+").replace("✅", "[ok]").replace("❌", "[erro]").replace("🟩", "[dica]")
         texto_pdf = unicodedata.normalize('NFKD', raw).encode('ASCII', 'ignore').decode('ASCII')
