@@ -24,7 +24,20 @@ body { background-color: #f7fafd; }
 # ========== BARRA LATERAL ==========
 st.sidebar.image("logo_gmex.png", width=120)
 st.sidebar.markdown("## GMEX - Transcrição de Áudio")
-st.sidebar.markdown("Transforme reuniões em texto com um clique.")
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🚀 Sobre a GMEX")
+st.sidebar.markdown("""
+**GMEX** é uma consultoria especializada em estratégias comerciais e desenvolvimento de times de alta performance.
+
+- 📊 Clareza estratégica
+- 🎯 Aumento de resultados
+- 🧠 Cultura comercial forte
+- 🤝 Desenvolvimento de líderes
+
+[🌐 www.gmex.com.br](https://www.gmex.com.br)  
+[📲 Fale conosco no WhatsApp](https://wa.me/5547992596131)
+""")
+st.sidebar.image("logo_gmex.png", width=100)
 
 # ========== CABEÇALHO ==========
 st.title("📝 GMEX - Transcrição de Reuniões")
