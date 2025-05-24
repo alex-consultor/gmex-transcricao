@@ -1,14 +1,9 @@
-# para a interface web
+--find-links https://download.pytorch.org/whl/cpu
+
 streamlit>=1.20
-
-# motor local de Speech-to-Text
 openai-whisper
-
-# wrapper para ffmpeg
 ffmpeg-python
-
-# gerar .docx
 python-docx
-
-# gerar .pdf
 fpdf2
+torch==2.1.0+cpu
+torchaudio==2.1.0+cpu
