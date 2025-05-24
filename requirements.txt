@@ -11,3 +11,4 @@ pillow
 pydub
 streamlit-audiorecorder
 imageio-ffmpeg
+openai
