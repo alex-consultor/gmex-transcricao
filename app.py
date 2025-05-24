@@ -22,7 +22,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ========== UPLOAD ==========
-uploaded_file = st.file_uploader("🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC)", type=["mp3", "wav", "m4a", "aac"])
+uploaded_file = st.file_uploader("🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC, OGG)", type=["mp3", "wav", "m4a", "aac", "ogg"])
 
 if 'transcricao' not in st.session_state:
     st.session_state.transcricao = ""
