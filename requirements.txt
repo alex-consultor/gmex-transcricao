@@ -8,10 +8,6 @@ ffmpeg-python
 python-docx
 fpdf2
 pillow
-
-# processamento de áudio
 pydub
-git+https://github.com/drivendataorg/streamlit-audio-recorder.git#egg=streamlit_audio_recorder
-
-# ajuste automático do path do FFmpeg
+streamlit-audiorecorder
 imageio-ffmpeg
