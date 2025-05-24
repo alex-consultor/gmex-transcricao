@@ -3,8 +3,9 @@
 
  # Speech-to-Text local
  openai-whisper
++torch
 
- # ffmpeg bindings
+ # ffmpeg bindings (pydub converter)
  ffmpeg-python
 
  # gerar .docx
@@ -19,5 +20,8 @@
  # processamento de áudio
  pydub
 
-+# gravação direta no navegador/celular
-+streamlit-audio-recorder
+ # gravação direta no navegador/celular
+ streamlit-audio-recorder
+
+ # ajuste automático do path do FFmpeg
+ imageio-ffmpeg
