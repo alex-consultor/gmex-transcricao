@@ -22,23 +22,28 @@ body { background-color: #f7fafd; }
 """, unsafe_allow_html=True)
 
 # ========== BARRA LATERAL ==========
+
 st.sidebar.image("logo_gmex.png", width=120)
 st.sidebar.markdown("## GMEX - Transcrição de Áudio")
+
 st.sidebar.markdown("---")
+
 st.sidebar.markdown("### 🚀 Sobre a GMEX")
 st.sidebar.markdown("""
 **GMEX** é uma consultoria especializada em estratégias comerciais e desenvolvimento de times de alta performance.
-st.sidebar.markdown("### App Desenvolvido por Alex Medeiros")
-st.sidebar.markdown("""
 
-- 📊 Clareza estratégica
-- 🎯 Aumento de resultados
-- 🧠 Cultura comercial forte
+- 📊 Clareza estratégica  
+- 🎯 Aumento de resultados  
+- 🧠 Cultura comercial forte  
 - 🤝 Desenvolvimento de líderes
 
 [🌐 www.gmex.com.br](https://www.gmex.com.br)  
 [📲 Fale conosco no WhatsApp](https://wa.me/5547992596131)
 """)
+
+st.sidebar.markdown("---")
+
+st.sidebar.markdown("### 👨‍💻 App desenvolvido por **Alex Medeiros**")
 
 # ========== CABEÇALHO ==========
 st.title("📝 GMEX - Transcrição de Reuniões")
