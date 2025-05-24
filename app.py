@@ -8,6 +8,8 @@ from io import BytesIO
 from docx import Document
 from fpdf import FPDF
 import base64
+import soundfile as sf
+import audioread
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição de Reuniões", page_icon="📝", layout="centered")
@@ -40,11 +42,16 @@ if 'transcricao' not in st.session_state:
 if uploaded_file:
     st.info("⏳ Iniciando a transcrição...")
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=uploaded_file.name[-4:]) as tmp:
-        tmp.write(uploaded_file.read())
-        tmp_path = tmp.name
-
     try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp_wav:
+            with audioread.audio_open(uploaded_file) as input_audio:
+                raw_data = input_audio.read_data()
+                samplerate = input_audio.samplerate
+                channels = input_audio.channels
+                sf.write(tmp_wav.name, raw_data, samplerate, subtype='PCM_16')
+
+            tmp_path = tmp_wav.name
+
         model = whisper.load_model("base")
 
         with st.spinner("Transcrevendo áudio com IA..."):
@@ -56,7 +63,8 @@ if uploaded_file:
         st.error(f"❌ Erro: {e}")
 
     finally:
-        os.remove(tmp_path)
+        if 'tmp_path' in locals() and os.path.exists(tmp_path):
+            os.remove(tmp_path)
 
 # ========== TRANSCRIÇÃO ==========
 if st.session_state.transcricao:
@@ -80,9 +88,9 @@ Sua tarefa é:
 Site: www.gmex.com.br | WhatsApp: https://wa.me/5547992596131
 
 Transcrição:
-\"\"\"
+"""
 {st.session_state.transcricao}
-\"\"\""""
+""""""
 
     # ========== EXPORTAÇÕES ==========
     st.markdown("### 📤 Exportar Prompt")
