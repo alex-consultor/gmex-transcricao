@@ -57,8 +57,10 @@ if uploaded_file:
 
     # Salva temporariamente o arquivo de áudio
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[-1]) as tmp:
-        tmp.write(uploaded_file.read())
-        tmp_path = tmp.name
+    tmp.write(uploaded_file.read())
+    tmp_path = tmp.name
+
+result = model.transcribe(tmp_path)
 
     try:
         model = whisper.load_model("base")
