@@ -8,6 +8,7 @@ from io import BytesIO
 from docx import Document
 from fpdf import FPDF
 import time
+import textwrap
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
@@ -141,6 +142,23 @@ Transcrição:
 
     with col3:
         class PDF(FPDF):
+    def __init__(self):
+        super().__init__()
+        self.add_page()
+        self.set_font("Arial", size=11)
+
+    def add_text(self, texto):
+        # Quebra linhas longas e adiciona células
+        for linha in texto.split("
+"):
+            # wrap em no máximo 90 caracteres
+            linhas_wrap = textwrap.wrap(linha, width=90, break_long_words=True, break_on_hyphens=True)
+            if not linhas_wrap:
+                # linha em branco
+                self.ln(7)
+            for sublinha in linhas_wrap:
+                self.multi_cell(0, 7, sublinha)
+(FPDF):
             def __init__(self):
                 super().__init__()
                 self.add_page()
