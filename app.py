@@ -51,45 +51,51 @@ st.title("📝 GMEX - Transcrição de Reuniões")
 st.markdown("<p>Transforme reuniões em texto com um clique.</p>", unsafe_allow_html=True)
 
 # ========== UPLOAD ==========
-# Início do processamento
-model = whisper.load_model("base")
-textos = []
+if 'transcricao' not in st.session_state:
+    st.session_state.transcricao = ""
 
-st.info("⏳ Iniciando a transcrição...")
-progress_bar = st.progress(0)
-status = st.empty()
-tempo_inicio = time.time()
+if uploaded_file:
+    st.info("⏳ Iniciando a transcrição...")
 
-total = len(segments)
-for i, seg in enumerate(segments):
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-        seg.export(tmp.name, format="mp3")
-        tmp_path = tmp.name
+    audio = AudioSegment.from_file(uploaded_file)
+    segment_ms = 10 * 60 * 1000  # 10 minutos em milissegundos
+    segments = [audio[i:i+segment_ms] for i in range(0, len(audio), segment_ms)]
 
-    status.write(f"🔊 Transcrevendo segmento {i+1}/{total}...")
-    
-    try:
-        res = model.transcribe(tmp_path)
-        textos.append(res["text"])
-    except Exception as e:
-        st.error(f"Erro no segmento {i+1}: {e}")
-    finally:
-        os.remove(tmp_path)
+    model = whisper.load_model("base")
+    textos = []
 
-    progresso = (i + 1) / total
-    progress_bar.progress(progresso)
+    progress_bar = st.progress(0)
+    status = st.empty()
+    tempo_inicio = time.time()
 
-    # Exibe tempo decorrido
-    tempo_passado = time.time() - tempo_inicio
-    minutos = int(tempo_passado // 60)
-    segundos = int(tempo_passado % 60)
-    status.write(f"⏱️ Tempo decorrido: {minutos:02d}:{segundos:02d} — Segmento {i+1}/{total}")
+    total = len(segments)
+    for i, seg in enumerate(segments):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+            seg.export(tmp.name, format="mp3")
+            tmp_path = tmp.name
 
-# Final
-st.session_state.transcricao = "\n".join(textos)
-st.success("✅ Transcrição concluída")
-progress_bar.empty()
-status.empty()
+        status.write(f"🔊 Transcrevendo segmento {i+1}/{total}...")
+
+        try:
+            res = model.transcribe(tmp_path)
+            textos.append(res["text"])
+        except Exception as e:
+            st.error(f"Erro no segmento {i+1}: {e}")
+        finally:
+            os.remove(tmp_path)
+
+        progresso = (i + 1) / total
+        progress_bar.progress(progresso)
+
+        tempo_passado = time.time() - tempo_inicio
+        minutos = int(tempo_passado // 60)
+        segundos = int(tempo_passado % 60)
+        status.write(f"⏱️ Tempo decorrido: {minutos:02d}:{segundos:02d} — Segmento {i+1}/{total}")
+
+    st.session_state.transcricao = "\n".join(textos)
+    st.success("✅ Transcrição concluída")
+    progress_bar.empty()
+    status.empty()
 
 # ========== EXIBIR TRANSCRIÇÃO ==========
 if st.session_state.transcricao:
