@@ -37,7 +37,6 @@ st.sidebar.markdown("""
 [🌐 www.gmex.com.br](https://www.gmex.com.br)  
 [📲 Fale conosco no WhatsApp](https://wa.me/5547992596131)
 """)
-st.sidebar.image("logo_gmex.png", width=100)
 
 # ========== CABEÇALHO ==========
 st.title("📝 GMEX - Transcrição de Reuniões")
