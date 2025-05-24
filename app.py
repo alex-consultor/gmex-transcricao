@@ -42,6 +42,13 @@ st.sidebar.markdown("## GMEX - Transcrição de Áudio")
 st.sidebar.markdown("Transforme reuniões em texto com um clique.")
 st.sidebar.markdown("---")
 st.sidebar.markdown("**Desenvolvido por:** alex-consultor")
+# Pequena propaganda da GMEX
+st.sidebar.markdown("## Sobre a GMEX")
+st.sidebar.markdown(
+    "🚀 Acelere seus resultados com nossa consultoria comercial.\n"
+    "💡 Estratégias personalizadas, treinamento de equipes e crescimento sustentável.\n"
+    "🔗 [Saiba mais](https://www.gmex.com.br)"
+)
 
 # ========== CABEÇALHO ==========
 st.title("📝 GMEX - Transcrição de Reuniões")
@@ -49,8 +56,8 @@ st.markdown("<p>Transforme reuniões em texto com um clique.</p>", unsafe_allow_
 
 # ========== UPLOAD ==========
 uploaded_file = st.file_uploader(
-    "🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC)",
-    type=["mp3", "wav", "m4a", "aac"]
+    "🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC, OGG)",
+    type=["mp3", "wav", "m4a", "aac", "ogg"]
 )
 
 if 'transcricao' not in st.session_state:
