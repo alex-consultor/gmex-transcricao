@@ -85,7 +85,7 @@ if st.session_state.transcricao:
     st.text_area("", st.session_state.transcricao, height=300)
 
     # PROMPT CONSERVADO
-    prompt = """Abaixo está a transcrição de uma reunião.
+    prompt = f"""Abaixo está a transcrição de uma reunião.
  Sua tarefa é:
  1. Resumir os pontos principais discutidos
  2. Destacar ações mencionadas e responsáveis
@@ -104,7 +104,6 @@ if st.session_state.transcricao:
  ### Conteúdo da reunião
  {st.session_state.transcricao}
 """
-
     st.markdown("### 📤 Exportar Prompt")
     c1,c2,c3 = st.columns(3)
     with c1:
