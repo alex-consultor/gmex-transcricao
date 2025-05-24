@@ -8,81 +8,32 @@ from io import BytesIO
 from docx import Document
 from fpdf import FPDF
 from fpdf.errors import FPDFException
-import time
 import textwrap
 
-# ========== FUNÇÕES AUXILIARES ==========
-def DocumentToBytes(text):
-    bio = BytesIO()
-    doc = Document()
-    for line in text.split("\n"):
-        doc.add_paragraph(line)
-    doc.save(bio)
-    return bio.getvalue()
-
-
-def PDFToBytes(text):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=11)
-    # Quebra de linhas com fallback para textos longos
-    for line in text.split("
-"):
-        partes = textwrap.wrap(line, width=90, break_long_words=True, break_on_hyphens=True)
-        if not partes:
-            pdf.ln(8)
-        for sub in partes:
-            try:
-                pdf.multi_cell(0, 8, sub)
-            except FPDFException:
-                # quebra em pedaços menores
-                mini = textwrap.wrap(sub, width=50, break_long_words=True, break_on_hyphens=True)
-                for m in mini:
-                    try:
-                        pdf.multi_cell(0, 8, m)
-                    except FPDFException:
-                        pass
-    raw = pdf.output(dest="S")
-    return raw if isinstance(raw, (bytes, bytearray)) else raw.encode("latin-1")
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
-st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝", layout="wide")
+st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
 
-# ========= CSS CUSTOMIZADO ==========
+# ========== ESTILO VISUAL ==========
 st.markdown("""
 <style>
 body { background-color: #f7fafd; }
-.header-section { text-align: center; margin-bottom: 2rem; }
-.metric-card { background: #fff; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.stButton>button { color: white; background: #3b82f6; border-radius: 8px; padding: 0.5em 2em; font-size:1em; }
 </style>
 """, unsafe_allow_html=True)
 
-# ========= HERO SECTION ==========
-st.markdown("<div class='header-section'>", unsafe_allow_html=True)
-col1, col2, col3 = st.columns([2, 6, 2])
-with col2:
-    st.image("logo_gmex.png", width=150)
-    st.markdown("# 📝 GMEX Transcrição de Reuniões", unsafe_allow_html=True)
-    st.markdown("<p>Transforme suas reuniões em textos precisos usando IA.</p>", unsafe_allow_html=True)
-st.markdown("</div>", unsafe_allow_html=True)
-
-# ========= BARRA LATERAL ==========
+# ========== BARRA LATERAL ==========
 st.sidebar.image("logo_gmex.png", width=120)
 st.sidebar.markdown("## GMEX - Transcrição de Áudio")
 st.sidebar.markdown("Transforme reuniões em texto com um clique.")
-st.sidebar.markdown("---")
-st.sidebar.markdown("**Desenvolvido por:** Alex Medeiros, Consultor GMEX")
-st.sidebar.markdown("---")
-st.sidebar.markdown("## Sobre a GMEX")
-st.sidebar.markdown(
-    "🚀 Acelere seus resultados com consultoria comercial.\n"
-    "💡 Estratégias personalizadas e equipes de alta performance.\n"
-    "🔗 [Conheça nossos serviços](https://www.gmex.com.br)"
-)
 
-# ========= UPLOAD ==========
-st.markdown("## 🎧 Envie seu áudio")
+# ========== CABEÇALHO ==========
+st.title("📝 GMEX - Transcrição de Reuniões")
+st.markdown("<p>Transforme reuniões em texto com um clique.</p>", unsafe_allow_html=True)
+
+# ========== UPLOAD ==========
 uploaded_file = st.file_uploader(
-    "Suporta: MP3, WAV, M4A, AAC, OGG", type=["mp3", "wav", "m4a", "aac", "ogg"]
+    "🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC, OGG)",
+    type=["mp3","wav","m4a","aac","ogg"]
 )
 
 if 'transcricao' not in st.session_state:
@@ -91,49 +42,31 @@ if 'transcricao' not in st.session_state:
 if uploaded_file:
     st.info("⏳ Iniciando a transcrição...")
     audio = AudioSegment.from_file(uploaded_file)
-    duration_ms = len(audio)
-    segment_ms = 10 * 60 * 1000  # 10 minutos
-    segments = [audio[i:i + segment_ms] for i in range(0, duration_ms, segment_ms)]
-    total = len(segments)
-
-    # exibindo métricas iniciais
-    m1, m2, m3 = st.columns(3)
-    m1.metric("Duração (min)", round(duration_ms/60000, 1))
-    m2.metric("Blocos", total)
-    m3.metric("Modelo", "Whisper base")
-
-    progress_bar = st.progress(0)
-    eta_text = st.empty()
-    start_time = time.time()
+    segment_ms = 10*60*1000
+    segments = [audio[i:i+segment_ms] for i in range(0, len(audio), segment_ms)]
     model = whisper.load_model("base")
     textos = []
-
-    for idx, seg in enumerate(segments):
+    for seg in segments:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
             seg.export(tmp.name, format="mp3")
             tmp_path = tmp.name
         try:
-            result = model.transcribe(tmp_path)
-            textos.append(result["text"])
+            res = model.transcribe(tmp_path)
+            textos.append(res["text"])
         except Exception as e:
-            st.error(f"❌ Erro no bloco {idx+1}: {e}")
+            st.error(f"Erro no segmento: {e}")
         finally:
             os.remove(tmp_path)
-        elapsed = time.time() - start_time
-        avg = elapsed / (idx + 1)
-        remaining = avg * (total - idx - 1)
-        eta_text.text(f"Bloco {idx+1}/{total} — ETA: {int(remaining)}s")
-        progress_bar.progress((idx + 1) / total)
-
     st.session_state.transcricao = "\n".join(textos)
     st.success("✅ Transcrição concluída")
 
-# ========= RESULTADOS ==========
+# ========== EXIBIR TRANSCRIÇÃO ==========
 if st.session_state.transcricao:
-    st.subheader("📄 Transcrição Completa")
+    st.markdown("### 📄 Texto transcrito")
     st.text_area("", st.session_state.transcricao, height=300)
 
-    prompt = f"""Abaixo está a transcrição de uma reunião.
+    # PROMPT CONSERVADO
+    prompt = """Abaixo está a transcrição de uma reunião.
  Sua tarefa é:
  1. Resumir os pontos principais discutidos
  2. Destacar ações mencionadas e responsáveis
@@ -152,25 +85,46 @@ if st.session_state.transcricao:
  ### Conteúdo da reunião
  {st.session_state.transcricao}
 """
-    st.subheader("💬 Prompt para ChatGPT")
-    st.text_area("Copie e cole no ChatGPT:", prompt, height=200)
 
-    st.subheader("📤 Exportar Prompt")
-    b1, b2, b3 = st.columns(3)
-    b1.download_button("TXT", prompt, "transcricao.txt")
-    b2.download_button(
-        "DOCX",
-        data=BytesIO(DocumentToBytes(prompt)),
-        file_name="transcricao.docx",
-        mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    )
-    b3.download_button(
-        "PDF",
-        data=BytesIO(PDFToBytes(prompt)),
-        file_name="transcricao.pdf",
-        mime="application/pdf"
-    )
+    st.markdown("### 📤 Exportar Prompt")
+    c1,c2,c3 = st.columns(3)
+    with c1:
+        st.download_button("TXT", prompt, "reuniao.txt")
+    with c2:
+        # DOCX
+        bio = BytesIO()
+        doc = Document()
+        for l in prompt.split("\n"):
+            doc.add_paragraph(l)
+        doc.save(bio)
+        st.download_button("DOCX", bio.getvalue(), "reuniao.docx")
+    with c3:
+        # PDF com fallback
+        class PDF(FPDF):
+            def __init__(self):
+                super().__init__(); self.add_page(); self.set_font("Arial", size=11)
+            def add_text(self, txt):
+                for line in txt.split("\n"):
+                    partes = textwrap.wrap(line, width=90, break_long_words=True, break_on_hyphens=True)
+                    if not partes: self.ln(7)
+                    for sub in partes:
+                        try: self.multi_cell(0,7,sub)
+                        except FPDFException:
+                            mini = textwrap.wrap(sub, width=50, break_long_words=True, break_on_hyphens=True)
+                            for m in mini:
+                                try: self.multi_cell(0,7,m)
+                                except FPDFException: pass
+        pdf = PDF(); pdf.add_text(prompt)
+        raw = pdf.output(dest='S')
+        data = raw if isinstance(raw, (bytes,bytearray)) else raw.encode('latin-1')
+        st.download_button("PDF", data, "reuniao.pdf")
 
-# ========= RODAPÉ ==========
+    st.markdown("### 💬 Prompt para ChatGPT")
+    st.text_area("Copie e cole:", prompt, height=200)
+
+    if st.button("Limpar tudo"):
+        st.session_state.clear(); st.experimental_rerun()
+
+# ========== RODAPÉ ==========
 st.markdown("---")
-st.markdown("<p style='text-align:center; color:#555;'>© 2025 GMEX - Todos os direitos reservados</p>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center;color:#555;'>GMEX © 2025</p>", unsafe_allow_html=True)
