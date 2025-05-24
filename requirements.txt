@@ -1,27 +1,14 @@
- # interface web
- streamlit>=1.20
+--find-links https://download.pytorch.org/whl/cpu/torch_stable.html
+torch==2.1.0+cpu
+torchaudio==2.1.0+cpu
 
- # Speech-to-Text local
- openai-whisper
-+torch
+openai-whisper
 
- # ffmpeg bindings (pydub converter)
- ffmpeg-python
-
- # gerar .docx
- python-docx
-
- # gerar .pdf
- fpdf2
-
- # para carregar imagens
- pillow
-
- # processamento de áudio
- pydub
-
- # gravação direta no navegador/celular
- streamlit-audio-recorder
-
- # ajuste automático do path do FFmpeg
- imageio-ffmpeg
+streamlit>=1.20
+ffmpeg-python
+python-docx
+fpdf2
+pillow
+pydub
+streamlit-audio-recorder
+imageio-ffmpeg
