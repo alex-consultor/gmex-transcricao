@@ -29,6 +29,7 @@ st.sidebar.markdown("### 🚀 Sobre a GMEX")
 st.sidebar.markdown("""
 **GMEX** é uma consultoria especializada em estratégias comerciais e desenvolvimento de times de alta performance.
 st.sidebar.markdown("### App Desenvolvido por Alex Medeiros")
+st.sidebar.markdown("""
 
 - 📊 Clareza estratégica
 - 🎯 Aumento de resultados
