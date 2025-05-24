@@ -1,20 +1,23 @@
-# interface web
-streamlit>=1.20
+ # interface web
+ streamlit>=1.20
 
-# Speech-to-Text local
-openai-whisper
+ # Speech-to-Text local
+ openai-whisper
 
-# ffmpeg bindings
-ffmpeg-python
+ # ffmpeg bindings
+ ffmpeg-python
 
-# gerar .docx
-python-docx
+ # gerar .docx
+ python-docx
 
-# gerar .pdf
-fpdf2
+ # gerar .pdf
+ fpdf2
 
-# para carregar imagens
-pillow
+ # para carregar imagens
+ pillow
 
-# processamento de áudio
-pydub
+ # processamento de áudio
+ pydub
+
++# gravação direta no navegador/celular
++streamlit-audio-recorder
