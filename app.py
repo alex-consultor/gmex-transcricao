@@ -6,6 +6,7 @@ from PIL import Image
 from io import BytesIO
 from docx import Document
 from fpdf import FPDF
+from pydub import AudioSegment
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
@@ -22,10 +23,27 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ========== UPLOAD ==========
-uploaded_file = st.file_uploader("🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC, OGG)", type=["mp3", "wav", "m4a", "aac", "ogg"])
+uploaded_file = st.file_uploader(
+    "🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC, OGG)",
+    type=["mp3", "wav", "m4a", "aac", "ogg"]
+)
 
 if 'transcricao' not in st.session_state:
     st.session_state.transcricao = ""
+
+def transcreve_em_blocos(audio_path, bloco_min=10):
+    audio = AudioSegment.from_file(audio_path)
+    bloco_ms = bloco_min * 60 * 1000  # bloco em milissegundos
+    chunks = [audio[i:i+bloco_ms] for i in range(0, len(audio), bloco_ms)]
+    model = whisper.load_model("base")
+    transcricao_total = ""
+    for idx, chunk in enumerate(chunks):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as temp_chunk:
+            chunk.export(temp_chunk.name, format="wav")
+            result = model.transcribe(temp_chunk.name)
+            transcricao_total += f"[Bloco {idx+1}]\n{result['text']}\n\n"
+            os.remove(temp_chunk.name)
+    return transcricao_total
 
 if uploaded_file:
     st.info("⏳ Iniciando a transcrição...")
@@ -48,10 +66,9 @@ if uploaded_file:
                 'ffmpeg', '-y', '-i', tmp_audio_path, wav_path
             ], check=True)
 
-        model = whisper.load_model("base")
-        with st.spinner("Transcrevendo áudio com IA..."):
-            result = model.transcribe(wav_path)
-            st.session_state.transcricao = result["text"]
+        # Transcreve em blocos (exemplo: blocos de 10 minutos)
+        with st.spinner("Transcrevendo áudio em blocos com IA..."):
+            st.session_state.transcricao = transcreve_em_blocos(wav_path, bloco_min=10)
             st.success("✅ Transcrição concluída com sucesso!")
 
     except Exception as e:
