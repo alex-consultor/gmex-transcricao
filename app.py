@@ -40,7 +40,7 @@ st.sidebar.image("logo_gmex.png", width=120)
 st.sidebar.markdown("## GMEX - Transcrição de Áudio")
 st.sidebar.markdown("Transforme reuniões em texto com um clique.")
 st.sidebar.markdown("---")
-st.sidebar.markdown("**Desenvolvido por:** alex-consultor")
+st.sidebar.markdown("**Desenvolvido por:** Alex-Medeiros </p>Consultor")
 
 # ========== CABEÇALHO ==========
 st.title("📝 GMEX - Transcrição de Reuniões")
