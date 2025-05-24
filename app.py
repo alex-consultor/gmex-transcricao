@@ -170,11 +170,13 @@ if st.session_state.transcricao:
         height=300
     )
 
-    # ✅ Botão para limpar com segurança (com key única)
-if st.button("🧹 Limpar tudo", key="limpar_btn"):
-    st.session_state["limpar"] = True
+    # ✅ Executa a limpeza com segurança usando flag
+if "limpar_flag" in st.session_state:
+    st.session_state.clear()
+    st.stop()  # Garante que o app pare aqui e reinicie limpo
+
+# ✅ Botão de limpar (com key única)
+if st.button("🧹 Limpar tudo", key="botao_limpar"):
+    st.session_state["limpar_flag"] = True
     st.experimental_rerun()
 
-# ✅ Executa a limpeza apenas na próxima execução
-if st.session_state.get("limpar"):
-    st.session_state.clear()
