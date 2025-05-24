@@ -80,9 +80,9 @@ Sua tarefa é:
 Site: www.gmex.com.br | WhatsApp: https://wa.me/5547992596131
 
 Transcrição:
-"""
+\"\"\"
 {st.session_state.transcricao}
-""""""
+\"\"\""""
 
     # ========== EXPORTAÇÕES ==========
     st.markdown("### 📤 Exportar Prompt")
