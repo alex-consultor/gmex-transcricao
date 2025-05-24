@@ -9,7 +9,17 @@ from docx import Document
 from fpdf import FPDF
 from fpdf.errors import FPDFException
 import textwrap
-from streamlit_audio_recorder import st_audiorecorder
+
+# ========== IMPORTAÇÃO OPCIONAL DO GRAVADOR DE ÁUDIO ==========
+try:
+    from streamlit_audio_recorder import st_audiorecorder
+except ImportError:
+    def st_audiorecorder(*args, **kwargs):
+        st.warning(
+            "Pacote 'streamlit_audio_recorder' não instalado. "
+            "Para habilitar gravação direta, instale com 'pip install streamlit-audio-recorder'."
+        )
+        return None
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
@@ -32,13 +42,18 @@ st.sidebar.markdown("---")
 st.sidebar.markdown(
     "### 📢 Canal do DF\n"
     "Dicas, tutoriais e suporte direto.\n"
-    "[Acesse aqui](https://link-do-canal)")
+    "[Acesse aqui](https://link-do-canal)"
+)
 
 # Seleção de modelo Whisper
-model_name = st.sidebar.selectbox("Modelo Whisper", ["tiny","base","small","medium","large"], index=1)
+model_name = st.sidebar.selectbox(
+    "Modelo Whisper",
+    ["tiny", "base", "small", "medium", "large"],
+    index=1
+)
 
 # Gravação direta (mobile/browser)
-with st.sidebar.expander("🎙️ Gravar Áudio"):    
+with st.sidebar.expander("🎙️ Gravar Áudio"):
     audio_bytes = st_audiorecorder()
     if audio_bytes:
         st.session_state['uploaded_file'] = BytesIO(audio_bytes)
@@ -73,7 +88,7 @@ if 'transcricao' not in st.session_state:
 with st.expander("1. Upload / Gravação", expanded=True):
     uploaded_file = st.file_uploader(
         "🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC, OGG)",
-        type=["mp3","wav","m4a","aac","ogg"]
+        type=["mp3", "wav", "m4a", "aac", "ogg"]
     )
     if hasattr(st.session_state, 'uploaded_file'):
         uploaded_file = st.session_state['uploaded_file']
@@ -82,7 +97,7 @@ with st.expander("1. Upload / Gravação", expanded=True):
 with st.expander("2. Transcrição"):
     if uploaded_file:
         audio = AudioSegment.from_file(uploaded_file)
-        segment_ms = 10*60*1000
+        segment_ms = 10 * 60 * 1000
         segments = [audio[i:i+segment_ms] for i in range(0, len(audio), segment_ms)]
         model = load_model(model_name)
         progress = st.progress(0)
@@ -103,7 +118,6 @@ if st.session_state.transcricao:
         st.markdown("### 📄 Texto transcrito")
         st.text_area("", st.session_state.transcricao, height=300)
 
-        # Prompt estático
         prompt = f"""Abaixo está a transcrição de uma reunião.
 Sua tarefa é:
 1. Resumir os pontos principais discutidos
@@ -153,11 +167,15 @@ Acesse: www.gmex.com.br ou envie mensagem: https://wa.me/5547992596131
             pdf = PDF()
             pdf.add_text(texto_pdf)
             raw = pdf.output(dest="S")
-            pdf_bytes = raw if isinstance(raw, (bytes,bytearray)) else raw.encode("latin-1")
+            pdf_bytes = raw if isinstance(raw, (bytes, bytearray)) else raw.encode("latin-1")
             pdf_buffer = BytesIO(pdf_bytes)
-            st.download_button("📄 Baixar .PDF", data=pdf_buffer, file_name="reuniao_gmex.pdf", mime="application/pdf")
+            st.download_button(
+                "📄 Baixar .PDF",
+                data=pdf_buffer,
+                file_name="reuniao_gmex.pdf",
+                mime="application/pdf"
+            )
 
-        # Copiar prompt direto
         if st.button("📋 Copiar prompt para ChatGPT"):
             st.experimental_set_clipboard(prompt)
             st.toast("Prompt copiado para clipboard!")
