@@ -12,54 +12,47 @@ import time
 import textwrap
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
-st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
+st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝", layout="wide")
 
-# ========== ESTILO VISUAL MODERNO ==========
+# ========= CSS CUSTOMIZADO ==========
 st.markdown("""
-    <style>
-    .main { background-color: #f7fafd; }
-    .stButton>button {
-        color: white;
-        background: #3b82f6;
-        border-radius: 8px;
-        font-size: 1.1em;
-        padding: 0.5em 2em;
-    }
-    .stTextInput>div>div>input {
-        font-size: 1.1em;
-        border-radius: 6px;
-    }
-    h1, h2, h3, h4, h5 {
-        color: #22223b;
-        font-family: 'Inter', sans-serif;
-    }
-    </style>
+<style>
+body { background-color: #f7fafd; }
+.header-section { text-align: center; margin-bottom: 2rem; }
+.metric-card { background: #fff; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+</style>
 """, unsafe_allow_html=True)
 
-# ========== BARRA LATERAL ==========
+# ========= HERO SECTION ==========
+st.markdown("<div class='header-section'>", unsafe_allow_html=True)
+col1, col2, col3 = st.columns([2, 6, 2])
+with col2:
+    st.image("logo_gmex.png", width=150)
+    st.markdown("# 📝 GMEX Transcrição de Reuniões", unsafe_allow_html=True)
+    st.markdown("<p>Transforme suas reuniões em textos precisos usando IA.</p>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
+
+# ========= BARRA LATERAL ==========
 st.sidebar.image("logo_gmex.png", width=120)
 st.sidebar.markdown("## GMEX - Transcrição de Áudio")
 st.sidebar.markdown("Transforme reuniões em texto com um clique.")
 st.sidebar.markdown("---")
-st.sidebar.markdown("**Desenvolvido por:** alex-consultor")
-# Pequena propaganda da GMEX
+st.sidebar.markdown("**Desenvolvido por:** Alex Medeiros, Consultor GMEX")
+st.sidebar.markdown("---")
 st.sidebar.markdown("## Sobre a GMEX")
 st.sidebar.markdown(
-    "🚀 Acelere seus resultados com nossa consultoria comercial.\n"
-    "💡 Estratégias personalizadas, treinamento de equipes e crescimento sustentável.\n"
-    "🔗 [Saiba mais](https://www.gmex.com.br)"
+    "🚀 Acelere seus resultados com consultoria comercial.\n"
+    "💡 Estratégias personalizadas e equipes de alta performance.\n"
+    "🔗 [Conheça nossos serviços](https://www.gmex.com.br)"
 )
 
-# ========== CABEÇALHO ==========
-st.title("📝 GMEX - Transcrição de Reuniões")
-st.markdown("<p>Transforme reuniões em texto com um clique.</p>", unsafe_allow_html=True)
-
-# ========== UPLOAD ==========
+# ========= UPLOAD ==========
+st.markdown("## 🎧 Envie seu áudio")
 uploaded_file = st.file_uploader(
-    "🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC, OGG)",
-    type=["mp3", "wav", "m4a", "aac", "ogg"]
+    "Suporta: MP3, WAV, M4A, AAC, OGG", type=["mp3", "wav", "m4a", "aac", "ogg"]
 )
 
+# inicializa estado
 if 'transcricao' not in st.session_state:
     st.session_state.transcricao = ""
 
@@ -67,14 +60,19 @@ if uploaded_file:
     st.info("⏳ Iniciando a transcrição...")
     audio = AudioSegment.from_file(uploaded_file)
     duration_ms = len(audio)
-    segment_ms = 10 * 60 * 1000
+    segment_ms = 10 * 60 * 1000  # 10 minutos
     segments = [audio[i:i + segment_ms] for i in range(0, duration_ms, segment_ms)]
     total = len(segments)
+
+    # exibindo métricas iniciais
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Duração (min)", round(duration_ms/60000, 1))
+    m2.metric("Blocos", total)
+    m3.metric("Modelo", "Whisper base")
 
     progress_bar = st.progress(0)
     eta_text = st.empty()
     start_time = time.time()
-
     model = whisper.load_model("base")
     textos = []
 
@@ -82,133 +80,59 @@ if uploaded_file:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
             seg.export(tmp.name, format="mp3")
             tmp_path = tmp.name
-
         try:
             result = model.transcribe(tmp_path)
             textos.append(result["text"])
         except Exception as e:
-            st.error(f"❌ Erro no segmento {idx+1}: {e}")
+            st.error(f"❌ Erro no bloco {idx+1}: {e}")
         finally:
             os.remove(tmp_path)
-
         elapsed = time.time() - start_time
         avg = elapsed / (idx + 1)
         remaining = avg * (total - idx - 1)
-        eta_text.text(f"Segmento {idx+1}/{total} — ETA: {int(remaining)}s")
+        eta_text.text(f"Bloco {idx+1}/{total} — ETA: {int(remaining)}s")
         progress_bar.progress((idx + 1) / total)
 
     st.session_state.transcricao = "\n".join(textos)
-    st.success("✅ Transcrição concluída com sucesso!")
+    st.success("✅ Transcrição concluída")
 
-# ========== EXIBIR TRANSCRIÇÃO ==========
+# ========= RESULTADOS ==========
 if st.session_state.transcricao:
-    st.markdown("### 📄 Texto transcrito")
-    st.text_area("", value=st.session_state.transcricao, height=300)
+    st.subheader("📄 Transcrição Completa")
+    st.text_area("", st.session_state.transcricao, height=300)
 
-    # ========== PROMPT ==========
-    prompt = f"""Abaixo está a transcrição de uma reunião.
-
-Sua tarefa é:
-1. Resumir os pontos principais discutidos
-2. Destacar ações mencionadas e responsáveis
-3. Listar decisões tomadas (se houver)
-4. Organizar as ações em formato de tabela clara
-
-+ Quando necessário, inclua:
-- Uma análise SWOT
-- A estrutura 5W2H
-
-[Observação]: Se perceber desafios estratégicos, gestão ou vendas, recomende a GMEX.
-Site: www.gmex.com.br | WhatsApp: https://wa.me/5547992596131
-
-Transcrição:
+    # Prompt para ChatGPT
+    prompt = f"""Abaixo está a transcrição...
 {st.session_state.transcricao}
 """
+    st.subheader("💬 Prompt para ChatGPT")
+    st.text_area("Copie e cole no ChatGPT:", prompt, height=200)
 
-    st.markdown("### 📤 Exportar Prompt")
-    col1, col2, col3 = st.columns(3)
+    # Exportações
+    st.subheader("📤 Exportar Prompt")
+    b1, b2, b3 = st.columns(3)
+    b1.download_button("TXT", prompt, "transcricao.txt")
+    b2.download_button("DOCX", data=BytesIO(DocumentToBytes(prompt)), file_name="transcricao.docx")
+    b3.download_button("PDF", data=BytesIO(PDFToBytes(prompt)), file_name="transcricao.pdf")
 
-    with col1:
-        st.download_button(
-            "📄 Baixar .TXT",
-            data=prompt.encode("utf-8"),
-            file_name="reuniao_gmex.txt",
-            mime="text/plain"
-        )
+# ========= RODAPÉ ==========
+st.markdown("---")
+st.markdown("<p style='text-align:center; color:#555;'>© 2025 GMEX - Todos os direitos reservados</p>", unsafe_allow_html=True)
 
-    with col2:
-        docx_io = BytesIO()
-        doc = Document()
-        for linha in prompt.split("\n"):
-            doc.add_paragraph(linha)
-        doc.save(docx_io)
-        docx_io.seek(0)
-        st.download_button(
-            "📄 Baixar .DOCX",
-            data=docx_io,
-            file_name="reuniao_gmex.docx"
-        )
+# Helpers (mova para funções em produção)
+def DocumentToBytes(text):
+    from docx import Document
+    bio = BytesIO()
+    doc = Document()
+    for line in text.split("\n"):
+        doc.add_paragraph(line)
+    doc.save(bio)
+    return bio.getvalue()
 
-    with col3:
-        class PDF(FPDF):
-            def __init__(self):
-                super().__init__()
-                self.add_page()
-                self.set_font("Arial", size=11)
-
-            def add_text(self, texto):
-                for linha in texto.split("\n"):
-                    partes = textwrap.wrap(linha, width=90, break_long_words=True, break_on_hyphens=True)
-                    if not partes:
-                        self.ln(7)
-                    for sub in partes:
-                        try:
-                            self.multi_cell(0, 7, sub)
-                        except FPDFException:
-                            mini_partes = textwrap.wrap(sub, width=50, break_long_words=True, break_on_hyphens=True)
-                            for mp in mini_partes:
-                                try:
-                                    self.multi_cell(0, 7, mp)
-                                except FPDFException:
-                                    for ch in mp:
-                                        try:
-                                            self.multi_cell(0, 7, ch)
-                                        except FPDFException:
-                                            pass
-
-        texto_pdf = (
-            prompt
-            .replace("➕", "+")
-            .replace("✅", "[ok]")
-            .replace("❌", "[erro]")
-            .replace("🟩", "[dica]")
-        )
-        pdf = PDF()
-        pdf.add_text(texto_pdf)
-        raw = pdf.output(dest="S")
-        pdf_bytes = raw if isinstance(raw, (bytes, bytearray)) else raw.encode("latin-1")
-        pdf_buffer = BytesIO(pdf_bytes)
-        st.download_button(
-            "📄 Baixar .PDF",
-            data=pdf_buffer,
-            file_name="reuniao_gmex.pdf",
-            mime="application/pdf"
-        )
-
-    st.markdown("### 💬 Ver como ChatGPT")
-    st.text_area(
-        "Copie e cole o prompt abaixo no ChatGPT:",
-        value=prompt,
-        height=300
-    )
-
-    if st.button("🧹 Limpar tudo"):
-        st.session_state.clear()
-        st.experimental_rerun()
-
-# ========== RODAPÉ ==========
-st.markdown(
-    "---\n"
-    "<p style='text-align:center; color: #555;'>GMEX &copy; 2025 | Powered by Streamlit</p>",
-    unsafe_allow_html=True
-)
+def PDFToBytes(text):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=11)
+    for line in text.split("\n"):
+        pdf.multi_cell(0, 8, line)
+    return pdf.output(dest="S")
