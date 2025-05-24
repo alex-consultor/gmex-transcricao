@@ -1,7 +1,6 @@
 streamlit
-git+https://github.com/openai/whisper.git
-audioread
-soundfile
+whisper
 python-docx
 fpdf
 Pillow
+pydub
