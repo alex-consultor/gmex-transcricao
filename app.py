@@ -120,18 +120,15 @@ Sua tarefa é:
 Site: www.gmex.com.br | WhatsApp: https://wa.me/5547992596131
 
 Transcrição:
-"""
 {st.session_state.transcricao}
-"""""
+"""
 
     # ========== EXPORTAÇÕES ==========
     st.markdown("### 📤 Exportar Prompt")
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.download_button(
-            "📄 Baixar .TXT", data=prompt.encode("utf-8"), file_name="reuniao_gmex.txt", mime="text/plain"
-        )
+        st.download_button("📄 Baixar .TXT", data=prompt.encode("utf-8"), file_name="reuniao_gmex.txt", mime="text/plain")
 
     with col2:
         docx_io = BytesIO()
@@ -140,9 +137,7 @@ Transcrição:
             doc.add_paragraph(linha)
         doc.save(docx_io)
         docx_io.seek(0)
-        st.download_button(
-            "📄 Baixar .DOCX", data=docx_io, file_name="reuniao_gmex.docx"
-        )
+        st.download_button("📄 Baixar .DOCX", data=docx_io, file_name="reuniao_gmex.docx")
 
     with col3:
         class PDF(FPDF):
@@ -155,20 +150,12 @@ Transcrição:
                 for linha in texto.split("\n"):
                     self.multi_cell(0, 7, linha)
 
-        texto_pdf = (
-            prompt
-            .replace("➕", "+")
-            .replace("✅", "[ok]")
-            .replace("❌", "[erro]")
-            .replace("🟩", "[dica]")
-        )
+        texto_pdf = prompt.replace("➕", "+").replace("✅", "[ok]").replace("❌", "[erro]").replace("🟩", "[dica]")
         pdf = PDF()
         pdf.add_text(texto_pdf)
         pdf_output = pdf.output(dest='S').encode('latin-1')
         pdf_buffer = BytesIO(pdf_output)
-        st.download_button(
-            "📄 Baixar .PDF", data=pdf_buffer, file_name="reuniao_gmex.pdf", mime="application/pdf"
-        )
+        st.download_button("📄 Baixar .PDF", data=pdf_buffer, file_name="reuniao_gmex.pdf", mime="application/pdf")
 
     # ========== CHATGPT ==========
     st.markdown("### 💬 Ver como ChatGPT")
@@ -179,6 +166,7 @@ Transcrição:
         st.experimental_rerun()
 
 # ========== RODAPÉ BONITO ==========
+
 st.markdown("""
 ---
 <p style='text-align:center; color: #555;'>GMEX &copy; 2025 | Powered by Streamlit</p>
