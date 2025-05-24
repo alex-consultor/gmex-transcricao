@@ -9,6 +9,7 @@ from docx import Document
 from fpdf import FPDF
 from fpdf import FPDF
 import textwrap
+import time
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
@@ -50,34 +51,45 @@ st.title("📝 GMEX - Transcrição de Reuniões")
 st.markdown("<p>Transforme reuniões em texto com um clique.</p>", unsafe_allow_html=True)
 
 # ========== UPLOAD ==========
-uploaded_file = st.file_uploader(
-    "🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC, OGG)",
-    type=["mp3","wav","m4a","aac","ogg"]
-)
+# Início do processamento
+model = whisper.load_model("base")
+textos = []
 
-if 'transcricao' not in st.session_state:
-    st.session_state.transcricao = ""
+st.info("⏳ Iniciando a transcrição...")
+progress_bar = st.progress(0)
+status = st.empty()
+tempo_inicio = time.time()
 
-if uploaded_file:
-    st.info("⏳ Iniciando a transcrição...")
-    audio = AudioSegment.from_file(uploaded_file)
-    segment_ms = 10*60*1000
-    segments = [audio[i:i+segment_ms] for i in range(0, len(audio), segment_ms)]
-    model = whisper.load_model("base")
-    textos = []
-    for seg in segments:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-            seg.export(tmp.name, format="mp3")
-            tmp_path = tmp.name
-        try:
-            res = model.transcribe(tmp_path)
-            textos.append(res["text"])
-        except Exception as e:
-            st.error(f"Erro no segmento: {e}")
-        finally:
-            os.remove(tmp_path)
-    st.session_state.transcricao = "\n".join(textos)
-    st.success("✅ Transcrição concluída")
+total = len(segments)
+for i, seg in enumerate(segments):
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+        seg.export(tmp.name, format="mp3")
+        tmp_path = tmp.name
+
+    status.write(f"🔊 Transcrevendo segmento {i+1}/{total}...")
+    
+    try:
+        res = model.transcribe(tmp_path)
+        textos.append(res["text"])
+    except Exception as e:
+        st.error(f"Erro no segmento {i+1}: {e}")
+    finally:
+        os.remove(tmp_path)
+
+    progresso = (i + 1) / total
+    progress_bar.progress(progresso)
+
+    # Exibe tempo decorrido
+    tempo_passado = time.time() - tempo_inicio
+    minutos = int(tempo_passado // 60)
+    segundos = int(tempo_passado % 60)
+    status.write(f"⏱️ Tempo decorrido: {minutos:02d}:{segundos:02d} — Segmento {i+1}/{total}")
+
+# Final
+st.session_state.transcricao = "\n".join(textos)
+st.success("✅ Transcrição concluída")
+progress_bar.empty()
+status.empty()
 
 # ========== EXIBIR TRANSCRIÇÃO ==========
 if st.session_state.transcricao:
