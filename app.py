@@ -37,14 +37,6 @@ st.sidebar.image("logo_gmex.png", width=120)
 st.sidebar.markdown("## GMEX - Transcrição de Áudio")
 st.sidebar.markdown("Transforme reuniões em texto com um clique.")
 
-# Promoção: Canal do DF
-st.sidebar.markdown("---")
-st.sidebar.markdown(
-    "### 📢 Canal do DF\n"
-    "Dicas, tutoriais e suporte direto.\n"
-    "[Acesse aqui](https://link-do-canal)"
-)
-
 # Seleção de modelo Whisper
 model_name = st.sidebar.selectbox(
     "Modelo Whisper",
