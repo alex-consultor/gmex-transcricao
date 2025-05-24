@@ -142,29 +142,15 @@ Transcrição:
 
             def add_text(self, texto):
                 for linha in texto.split("\n"):
-                    partes = textwrap.wrap(linha, width=90, break_long_words=True, break_on_hyphens=True)
-                    if not partes:
-                        self.ln(7)
-                    for sub in partes:
-                        try:
-                            self.multi_cell(0, 7, sub)
-                        except FPDFException:
-                            mini_partes = textwrap.wrap(sub, width=50, break_long_words=True, break_on_hyphens=True)
-                            for mp in mini_partes:
-                                self.multi_cell(0, 7, mp)
+                    self.multi_cell(0, 7, linha)
 
-        texto_pdf = (
-            prompt.replace("➕", "+")
-            .replace("✅", "[ok]")
-            .replace("❌", "[erro]")
-            .replace("🟩", "[dica]")
-        )
+        texto_pdf = prompt.replace("➕", "+").replace("✅", "[ok]").replace("❌", "[erro]").replace("🟩", "[dica]")
         pdf = PDF()
         pdf.add_text(texto_pdf)
-        pdf_bytes = pdf.output(dest='S').encode('latin-1')
-        pdf_buffer = BytesIO(pdf_bytes)
+        pdf_output = pdf.output(dest='S').encode('latin-1')
+        pdf_buffer = BytesIO(pdf_output)
         st.download_button("📄 Baixar .PDF", data=pdf_buffer, file_name="reuniao_gmex.pdf", mime="application/pdf")
-
+        
     st.markdown("### 💬 Ver como ChatGPT")
     st.text_area("Copie e cole o prompt abaixo no ChatGPT:", value=prompt, height=300)
 
