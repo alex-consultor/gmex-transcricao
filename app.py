@@ -52,34 +52,34 @@ uploaded_file = st.file_uploader(
     type=["mp3", "wav", "m4a", "aac"]
 )
 
+# inicializa estado
 if 'transcricao' not in st.session_state:
     st.session_state.transcricao = ""
 
 if uploaded_file:
     st.info("⏳ Iniciando a transcrição...")
 
-    # Carrega o áudio e divide em blocos de 10 minutos
+    # Carrega e divide áudio em blocos de até 10 minutos
     audio = AudioSegment.from_file(uploaded_file)
     duration_ms = len(audio)
-    segment_ms = 10 * 60 * 1000  # 10 minutos em milissegundos
+    segment_ms = 10 * 60 * 1000
     segments = [audio[i:i + segment_ms] for i in range(0, duration_ms, segment_ms)]
     total = len(segments)
 
+    # barra de progresso
     progress_bar = st.progress(0)
     eta_text = st.empty()
-
-    # Carrega o modelo uma única vez
-    model = whisper.load_model("base")
-    textos = []
     start_time = time.time()
 
+    # carrega modelo apenas uma vez
+    model = whisper.load_model("base")
+    textos = []
+
     for idx, seg in enumerate(segments):
-        # Exporta cada segmento para um arquivo temporário
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
             seg.export(tmp.name, format="mp3")
             tmp_path = tmp.name
 
-        # Transcreve o segmento
         try:
             result = model.transcribe(tmp_path)
             textos.append(result["text"])
@@ -88,23 +88,23 @@ if uploaded_file:
         finally:
             os.remove(tmp_path)
 
-        # Atualiza barra de progresso e ETA
+        # atualiza progresso e ETA
         elapsed = time.time() - start_time
         avg = elapsed / (idx + 1)
         remaining = avg * (total - idx - 1)
         eta_text.text(f"Segmento {idx+1}/{total} — ETA: {int(remaining)}s")
         progress_bar.progress((idx + 1) / total)
 
-    # Junta tudo
+    # agrupa texto completo
     st.session_state.transcricao = "\n".join(textos)
     st.success("✅ Transcrição concluída com sucesso!")
 
-# ========== TRANSCRIÇÃO ==========
+# ========== EXIBIR TRANSCRIÇÃO ==========
 if st.session_state.transcricao:
     st.markdown("### 📄 Texto transcrito")
     st.text_area("", value=st.session_state.transcricao, height=300)
 
-    # ========== PROMPT ==========
+    # ========== PROMPT PARA CHATGPT ==========
     prompt = f"""Abaixo está a transcrição de uma reunião.
 
 Sua tarefa é:
@@ -142,23 +142,6 @@ Transcrição:
 
     with col3:
         class PDF(FPDF):
-    def __init__(self):
-        super().__init__()
-        self.add_page()
-        self.set_font("Arial", size=11)
-
-    def add_text(self, texto):
-        # Quebra linhas longas e adiciona células
-        for linha in texto.split("
-"):
-            # wrap em no máximo 90 caracteres
-            linhas_wrap = textwrap.wrap(linha, width=90, break_long_words=True, break_on_hyphens=True)
-            if not linhas_wrap:
-                # linha em branco
-                self.ln(7)
-            for sublinha in linhas_wrap:
-                self.multi_cell(0, 7, sublinha)
-(FPDF):
             def __init__(self):
                 super().__init__()
                 self.add_page()
@@ -166,16 +149,21 @@ Transcrição:
 
             def add_text(self, texto):
                 for linha in texto.split("\n"):
-                    self.multi_cell(0, 7, linha)
+                    # wrap linhas longas
+                    partes = textwrap.wrap(linha, width=90, break_long_words=True, break_on_hyphens=True)
+                    if not partes:
+                        self.ln(7)
+                    for sub in partes:
+                        self.multi_cell(0, 7, sub)
 
         texto_pdf = prompt.replace("➕", "+").replace("✅", "[ok]").replace("❌", "[erro]").replace("🟩", "[dica]")
         pdf = PDF()
         pdf.add_text(texto_pdf)
-        pdf_output = pdf.output(dest='S').encode('latin-1')
-        pdf_buffer = BytesIO(pdf_output)
+        pdf_bytes = pdf.output(dest='S').encode('latin-1')
+        pdf_buffer = BytesIO(pdf_bytes)
         st.download_button("📄 Baixar .PDF", data=pdf_buffer, file_name="reuniao_gmex.pdf", mime="application/pdf")
 
-    # ========== CHATGPT ==========
+    # ========== VER PROMPT ChatGPT ==========
     st.markdown("### 💬 Ver como ChatGPT")
     st.text_area("Copie e cole o prompt abaixo no ChatGPT:", value=prompt, height=300)
 
@@ -183,9 +171,9 @@ Transcrição:
         st.session_state.clear()
         st.experimental_rerun()
 
-# ========== RODAPÉ BONITO ==========
-
-st.markdown("""
----
-<p style='text-align:center; color: #555;'>GMEX &copy; 2025 | Powered by Streamlit</p>
-""", unsafe_allow_html=True)
+# ========== RODAPÉ ==========
+st.markdown(
+    "---\n"
+    "<p style='text-align:center; color: #555;'>GMEX &copy; 2025 | Powered by Streamlit</p>",
+    unsafe_allow_html=True
+)
