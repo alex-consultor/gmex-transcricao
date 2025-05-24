@@ -4,4 +4,3 @@ python-docx
 fpdf
 Pillow
 pydub
-python_version == "3.11.*"
