@@ -1,8 +1,14 @@
-# interface web
+# para a interface web
 streamlit>=1.20
 
-# modelo de ASR da OpenAI
+# motor local de Speech-to-Text
 openai-whisper
 
-# wrapper Python para ffmpeg
+# wrapper para ffmpeg
 ffmpeg-python
+
+# gerar .docx
+python-docx
+
+# gerar .pdf
+fpdf2
