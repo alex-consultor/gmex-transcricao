@@ -170,13 +170,8 @@ if st.session_state.transcricao:
         height=300
     )
 
-    # ✅ Botão para limpar com segurança
-if st.button("🧹 Limpar tudo"):
-    st.session_state["limpar"] = True
-    st.experimental_rerun()
-
-# ✅ Botão para limpar com segurança
-if st.button("🧹 Limpar tudo"):
+    # ✅ Botão para limpar com segurança (com key única)
+if st.button("🧹 Limpar tudo", key="limpar_btn"):
     st.session_state["limpar"] = True
     st.experimental_rerun()
 
