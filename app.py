@@ -175,11 +175,11 @@ if st.button("🧹 Limpar tudo"):
     st.session_state["limpar"] = True
     st.experimental_rerun()
 
+# ✅ Botão para limpar com segurança
+if st.button("🧹 Limpar tudo"):
+    st.session_state["limpar"] = True
+    st.experimental_rerun()
+
 # ✅ Executa a limpeza apenas na próxima execução
-if st.session_state.get("limpar"):
-    st.session_state.clear()
-
-
-# Na próxima execução, verifica e limpa com segurança
 if st.session_state.get("limpar"):
     st.session_state.clear()
