@@ -1,11 +1,13 @@
 import streamlit as st
 import whisper
+from pydub import AudioSegment
 from PIL import Image
 import tempfile
 import os
 from io import BytesIO
 from docx import Document
 from fpdf import FPDF
+import time
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
@@ -44,38 +46,57 @@ st.title("📝 GMEX - Transcrição de Reuniões")
 st.markdown("<p>Transforme reuniões em texto com um clique.</p>", unsafe_allow_html=True)
 
 # ========== UPLOAD ==========
+uploaded_file = st.file_uploader(
+    "🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC)", 
+    type=["mp3", "wav", "m4a", "aac"]
+)
+
+if 'transcricao' not in st.session_state:
+    st.session_state.transcricao = ""
+
 if uploaded_file:
     st.info("⏳ Iniciando a transcrição...")
 
-    # Salva temporariamente o arquivo de áudio
-    with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[-1]) as tmp:
-        tmp.write(uploaded_file.read())
-        tmp_path = tmp.name
+    # Carrega o áudio e divide em blocos de 10 minutos
+    audio = AudioSegment.from_file(uploaded_file)
+    duration_ms = len(audio)
+    segment_ms = 10 * 60 * 1000  # 10 minutos em milissegundos
+    segments = [audio[i:i + segment_ms] for i in range(0, duration_ms, segment_ms)]
+    total = len(segments)
 
-    try:
-        model = whisper.load_model("base")
-        with st.spinner("Transcrevendo áudio com IA..."):
+    progress_bar = st.progress(0)
+    eta_text = st.empty()
+
+    # Carrega o modelo uma única vez
+    model = whisper.load_model("base")
+    textos = []
+    start_time = time.time()
+
+    for idx, seg in enumerate(segments):
+        # Exporta cada segmento para um arquivo temporário
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+            seg.export(tmp.name, format="mp3")
+            tmp_path = tmp.name
+
+        # Transcreve o segmento
+        try:
             result = model.transcribe(tmp_path)
-            st.session_state.transcricao = result["text"]
-            st.success("✅ Transcrição concluída com sucesso!")
-    except Exception as e:
-        st.error(f"❌ Erro: {e}")
-    finally:
-        os.remove(tmp_path)
+            textos.append(result["text"])
+        except Exception as e:
+            st.error(f"❌ Erro no segmento {idx+1}: {e}")
+        finally:
+            os.remove(tmp_path)
 
-    try:
-        model = whisper.load_model("base")
-        with st.spinner("Transcrevendo áudio com IA..."):
-            # O Whisper aceita a maioria dos formatos diretamente!
-            result = model.transcribe(tmp_path)
-            st.session_state.transcricao = result["text"]
-            st.success("✅ Transcrição concluída com sucesso!")
+        # Atualiza barra de progresso e ETA
+        elapsed = time.time() - start_time
+        avg = elapsed / (idx + 1)
+        remaining = avg * (total - idx - 1)
+        eta_text.text(f"Segmento {idx+1}/{total} — ETA: {int(remaining)}s")
+        progress_bar.progress((idx + 1) / total)
 
-    except Exception as e:
-        st.error(f"❌ Erro: {e}")
-
-    finally:
-        os.remove(tmp_path)
+    # Junta tudo
+    st.session_state.transcricao = "\n".join(textos)
+    st.success("✅ Transcrição concluída com sucesso!")
 
 # ========== TRANSCRIÇÃO ==========
 if st.session_state.transcricao:
@@ -99,16 +120,18 @@ Sua tarefa é:
 Site: www.gmex.com.br | WhatsApp: https://wa.me/5547992596131
 
 Transcrição:
-\"\"\"
+"""
 {st.session_state.transcricao}
-\"\"\""""
+"""""
 
     # ========== EXPORTAÇÕES ==========
     st.markdown("### 📤 Exportar Prompt")
     col1, col2, col3 = st.columns(3)
 
     with col1:
-        st.download_button("📄 Baixar .TXT", data=prompt.encode("utf-8"), file_name="reuniao_gmex.txt", mime="text/plain")
+        st.download_button(
+            "📄 Baixar .TXT", data=prompt.encode("utf-8"), file_name="reuniao_gmex.txt", mime="text/plain"
+        )
 
     with col2:
         docx_io = BytesIO()
@@ -117,7 +140,9 @@ Transcrição:
             doc.add_paragraph(linha)
         doc.save(docx_io)
         docx_io.seek(0)
-        st.download_button("📄 Baixar .DOCX", data=docx_io, file_name="reuniao_gmex.docx")
+        st.download_button(
+            "📄 Baixar .DOCX", data=docx_io, file_name="reuniao_gmex.docx"
+        )
 
     with col3:
         class PDF(FPDF):
@@ -130,12 +155,20 @@ Transcrição:
                 for linha in texto.split("\n"):
                     self.multi_cell(0, 7, linha)
 
-        texto_pdf = prompt.replace("➕", "+").replace("✅", "[ok]").replace("❌", "[erro]").replace("🟩", "[dica]")
+        texto_pdf = (
+            prompt
+            .replace("➕", "+")
+            .replace("✅", "[ok]")
+            .replace("❌", "[erro]")
+            .replace("🟩", "[dica]")
+        )
         pdf = PDF()
         pdf.add_text(texto_pdf)
         pdf_output = pdf.output(dest='S').encode('latin-1')
         pdf_buffer = BytesIO(pdf_output)
-        st.download_button("📄 Baixar .PDF", data=pdf_buffer, file_name="reuniao_gmex.pdf", mime="application/pdf")
+        st.download_button(
+            "📄 Baixar .PDF", data=pdf_buffer, file_name="reuniao_gmex.pdf", mime="application/pdf"
+        )
 
     # ========== CHATGPT ==========
     st.markdown("### 💬 Ver como ChatGPT")
