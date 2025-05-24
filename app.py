@@ -44,23 +44,24 @@ st.title("📝 GMEX - Transcrição de Reuniões")
 st.markdown("<p>Transforme reuniões em texto com um clique.</p>", unsafe_allow_html=True)
 
 # ========== UPLOAD ==========
-uploaded_file = st.file_uploader(
-    "🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC)", 
-    type=["mp3", "wav", "m4a", "aac"]
-)
-
-if 'transcricao' not in st.session_state:
-    st.session_state.transcricao = ""
-
 if uploaded_file:
     st.info("⏳ Iniciando a transcrição...")
 
     # Salva temporariamente o arquivo de áudio
     with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(uploaded_file.name)[-1]) as tmp:
-    tmp.write(uploaded_file.read())
-    tmp_path = tmp.name
+        tmp.write(uploaded_file.read())
+        tmp_path = tmp.name
 
-result = model.transcribe(tmp_path)
+    try:
+        model = whisper.load_model("base")
+        with st.spinner("Transcrevendo áudio com IA..."):
+            result = model.transcribe(tmp_path)
+            st.session_state.transcricao = result["text"]
+            st.success("✅ Transcrição concluída com sucesso!")
+    except Exception as e:
+        st.error(f"❌ Erro: {e}")
+    finally:
+        os.remove(tmp_path)
 
     try:
         model = whisper.load_model("base")
