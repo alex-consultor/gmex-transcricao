@@ -3,3 +3,5 @@ whisper
 python-docx
 fpdf
 Pillow
+audioread
+soundfile
