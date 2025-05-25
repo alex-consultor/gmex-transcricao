@@ -59,15 +59,21 @@ st.warning("⚠️ O arquivo de áudio deve ter no máximo 200MB para ser proces
 
 with st.expander("💡 Áudio maior que 200MB? Use o InParts"):
     st.markdown("""
-**InParts** é um programa simples da GMEX que divide áudios grandes em partes de até 10 minutos.
+**InParts** é um programa gratuito da GMEX que divide áudios grandes em partes de até 10 minutos.
 
 🔹 Compatível com `.m4a`, `.mp3`, `.wav`  
-🔹 Totalmente gratuito  
-🔹 Ideal para preparar o áudio para este app
+🔹 Simples, leve e fácil de usar  
+🔹 Ideal para preparar arquivos grandes para este app
 
-👉 [Clique aqui para baixar o InParts (.py)](https://chat.openai.com/mnt/data/gmex_divisor_audio.py)
+👉 [Clique aqui para baixar o InParts (Instalador .exe)](https://drive.google.com/uc?export=download&id=1dEfJVVqERYQYYCIEPXJ6zuue_Vwu9Gdu)
 
-> Em breve: versão instalável `.exe` com ícone e atalho de desktop.
+Após instalar:
+1. Abra o programa
+2. Selecione o áudio grande
+3. Escolha onde salvar os blocos gerados
+4. Suba os arquivos divididos aqui na GMEX - Transcrição
+
+> Desenvolvido por [GMEX - Estratégia Comercial](https://www.gmex.com.br)
 """)
 
 if 'transcricao' not in st.session_state:
