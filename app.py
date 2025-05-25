@@ -142,56 +142,41 @@ if "transcricao" in st.session_state and st.session_state.transcricao:
  recomende a GMEX.
  Acesse: www.gmex.com.br ou envie uma mensagem para https://wa.me/5547992596131
 
- ### Conteúdo da reunião
- {st.session_state.transcricao}
-"""
+ if uploaded_files:
+    uploaded_files = sorted(uploaded_files, key=lambda x: x.name)
+    model = whisper.load_model("base")
+    st.session_state.transcricoes.clear()
+    status = st.empty()
+    progresso_geral = st.progress(0)
+    total_arquivos = len(uploaded_files)
+    tempo_inicio = time.time()
 
-    st.markdown("### 📤 Exportar Prompt")
-    c1,c2,c3 = st.columns(3)
-    with c1:
-        st.download_button("TXT", prompt, "reuniao.txt")
-    with c2:
-        bio = BytesIO()
-        doc = Document()
-        for l in prompt.split("
-"):
-            doc.add_paragraph(l)
-        doc.save(bio)
-        st.download_button("DOCX", bio.getvalue(), "reuniao.docx")
-    with c3:
-        class PDF(FPDF):
-            def __init__(self):
-                super().__init__()
-                self.add_page()
-                self.set_font("Arial", size=11)
-            def add_text(self, texto):
-                for linha in texto.split("
-"):
-                    partes = textwrap.wrap(linha, width=90)
-                    if not partes:
-                        self.ln(7)
-                    for sub in partes:
-                        try:
-                            self.multi_cell(0, 7, sub)
-                        except:
-                            pass
-        texto_pdf = prompt.replace("➕", "+").replace("✅", "[ok]").replace("❌", "[erro]").replace("🟩", "[dica]")
-        pdf = PDF()
-        pdf.add_text(texto_pdf)
-        raw = pdf.output(dest="S")
-        pdf_bytes = raw if isinstance(raw, (bytes, bytearray)) else raw.encode("latin-1")
-        pdf_buffer = BytesIO(pdf_bytes)
-        st.download_button("📄 Baixar .PDF", data=pdf_buffer, file_name="reuniao_gmex.pdf", mime="application/pdf")
+    for idx, uploaded_file in enumerate(uploaded_files):
+        status.write(f"🔄 Processando arquivo {idx+1}/{total_arquivos}: {uploaded_file.name}")
+        audio = AudioSegment.from_file(uploaded_file)
+        segment_ms = 10 * 60 * 1000
+        segments = [audio[i:i+segment_ms] for i in range(0, len(audio), segment_ms)]
+        transcricao_arquivo = []
 
-    st.markdown("### 💬 Ver como ChatGPT")
-    st.text_area("Copie e cole o prompt abaixo no ChatGPT:", value=prompt, height=300)
+        for j, seg in enumerate(segments):
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+                seg.export(tmp.name, format="mp3")
+                tmp_path = tmp.name
+            try:
+                status.write(f"🎙️ {uploaded_file.name} – Bloco {j+1}/{len(segments)}")
+                res = model.transcribe(tmp_path)
+                texto = res["text"].strip()
+                if texto and len(texto) > 15 and "inaudível" not in texto.lower():
+                    transcricao_arquivo.append(texto)
+            except Exception as e:
+                st.error(f"Erro no bloco {j+1} do arquivo {uploaded_file.name}: {e}")
+            finally:
+                os.remove(tmp_path)
 
-# ✅ Executa a limpeza com segurança usando flag
-if "limpar_flag" in st.session_state:
-    st.session_state.clear()
-    st.stop()
+        st.session_state.transcricoes.append("\n".join(transcricao_arquivo))
+        progresso_geral.progress((idx + 1) / total_arquivos)
 
-# ✅ Botão de limpar (com key única)
-if st.button("🧹 Limpar tudo", key="botao_limpar"):
-    st.session_state["limpar_flag"] = True
-    st.experimental_rerun()
+    tempo_total = time.time() - tempo_inicio
+    minutos = int(tempo_total // 60)
+    segundos = int(tempo_total % 60)
+    status.success(f"✅ Todos os arquivos foram transcritos com sucesso em {minutos:02d}:{segundos:02d}.")
