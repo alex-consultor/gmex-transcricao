@@ -100,8 +100,8 @@ if uploaded_files:
                 status.write(f"🎙️ {uploaded_file.name} – Bloco {j+1}/{len(segments)}")
                 res = model.transcribe(tmp_path)
                 texto = res["text"].strip()
-                if texto and len(texto) > 15 and "inaudível" not in texto.lower():
-                    transcricao_arquivo.append(texto)
+               if texto and len(texto.strip()) > 10:
+    transcricao_arquivo.append(texto)
             except Exception as e:
                 st.error(f"Erro no bloco {j+1} do arquivo {uploaded_file.name}: {e}")
             finally:
