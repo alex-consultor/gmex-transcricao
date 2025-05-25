@@ -55,19 +55,20 @@ uploaded_file = st.file_uploader(
     "🎧 Envie um arquivo de áudio (MP3, WAV, M4A, AAC, OGG)",
     type=["mp3", "wav", "m4a", "aac", "ogg"]
 )
-st.warning("⚠️ Arquivo deve ter no máximo 200MB. Se o seu áudio for maior, divida antes de fazer o upload.")
+st.warning("⚠️ O arquivo de áudio deve ter no máximo 200MB para ser processado neste app.")
 
-with st.expander("💡 Precisa de ajuda para dividir o áudio?"):
+with st.expander("💡 Áudio maior que 200MB? Use o InParts"):
     st.markdown("""
-    Você pode baixar uma ferramenta simples que criamos para dividir seu áudio em partes menores de 10 minutos.
+**InParts** é um programa simples da GMEX que divide áudios grandes em partes de até 10 minutos.
 
-    👉 [Clique aqui para baixar o Divisor de Áudio GMEX (.exe)](https://seu-link.com/divisor_audio_gmex.exe)
+🔹 Compatível com `.m4a`, `.mp3`, `.wav`  
+🔹 Totalmente gratuito  
+🔹 Ideal para preparar o áudio para este app
 
-    Após baixar:
-    1. Execute o programa
-    2. Selecione seu arquivo `.m4a`, `.mp3` etc.
-    3. Ele criará arquivos menores prontos para upload neste app
-    """)
+👉 [Clique aqui para baixar o InParts (.py)](https://chat.openai.com/mnt/data/gmex_divisor_audio.py)
+
+> Em breve: versão instalável `.exe` com ícone e atalho de desktop.
+""")
 
 if 'transcricao' not in st.session_state:
     st.session_state.transcricao = ""
