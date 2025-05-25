@@ -99,10 +99,11 @@ if uploaded_files:
         status.write(f"🔄 Processando arquivo {idx+1}/{total_arquivos}: {uploaded_file.name}")
 
         try:
-            audio = AudioSegment.from_file(uploaded_file)
-        except Exception as e:
-            st.error("❌ Não foi possível processar o arquivo. Verifique se ele está corrompido ou em um formato suportado.")
-            st.stop()
+    audio = AudioSegment.from_file(uploaded_file)
+except Exception as e:
+    st.error("❌ O áudio não pôde ser processado.")
+    st.text(f"Erro técnico: {str(e)}")
+    st.stop()
         segment_ms = 10 * 60 * 1000
         segments = [audio[i:i+segment_ms] for i in range(0, len(audio), segment_ms)]
         transcricao_arquivo = []
