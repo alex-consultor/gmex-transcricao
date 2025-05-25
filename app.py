@@ -154,7 +154,7 @@ if "transcricao" in st.session_state and st.session_state.transcricao:
     for idx, uploaded_file in enumerate(uploaded_files):
         status.write(f"🔄 Processando arquivo {idx+1}/{total_arquivos}: {uploaded_file.name}")
         audio = AudioSegment.from_file(uploaded_file)
-        segment_ms = 10 * 60 * 1000
+        segment_ms = 10 * 60 * 1000  # 10 minutos
         segments = [audio[i:i+segment_ms] for i in range(0, len(audio), segment_ms)]
         transcricao_arquivo = []
 
@@ -162,10 +162,12 @@ if "transcricao" in st.session_state and st.session_state.transcricao:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
                 seg.export(tmp.name, format="mp3")
                 tmp_path = tmp.name
+
             try:
                 status.write(f"🎙️ {uploaded_file.name} – Bloco {j+1}/{len(segments)}")
                 res = model.transcribe(tmp_path)
                 texto = res["text"].strip()
+                # Remover transcrições irrelevantes
                 if texto and len(texto) > 15 and "inaudível" not in texto.lower():
                     transcricao_arquivo.append(texto)
             except Exception as e:
