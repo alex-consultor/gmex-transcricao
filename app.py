@@ -2,6 +2,9 @@
 import streamlit as st
 import whisper
 from pydub import AudioSegment
+
+from pydub.utils import which
+AudioSegment.converter = which("ffmpeg")
 from PIL import Image
 import tempfile
 import os
@@ -84,10 +87,22 @@ if uploaded_files:
     progresso_geral = st.progress(0)
     total_arquivos = len(uploaded_files)
     tempo_inicio = time.time()
+    total_blocos = 0
+    blocos_processados = 0
+
+    # Calcula total de blocos (estimativa)
+    for audio_file in uploaded_files:
+        audio_temp = AudioSegment.from_file(audio_file)
+        total_blocos += len(audio_temp) // (10 * 60 * 1000) + 1
 
     for idx, uploaded_file in enumerate(uploaded_files):
         status.write(f"🔄 Processando arquivo {idx+1}/{total_arquivos}: {uploaded_file.name}")
-        audio = AudioSegment.from_file(uploaded_file)
+
+        try:
+            audio = AudioSegment.from_file(uploaded_file)
+        except Exception as e:
+            st.error("❌ Não foi possível processar o arquivo. Verifique se ele está corrompido ou em um formato suportado.")
+            st.stop()
         segment_ms = 10 * 60 * 1000
         segments = [audio[i:i+segment_ms] for i in range(0, len(audio), segment_ms)]
         transcricao_arquivo = []
@@ -97,15 +112,28 @@ if uploaded_files:
                 seg.export(tmp.name, format="mp3")
                 tmp_path = tmp.name
             try:
-                status.write(f"🎙️ {uploaded_file.name} – Bloco {j+1}/{len(segments)}")
                 res = model.transcribe(tmp_path)
                 texto = res["text"].strip()
-               if texto and len(texto.strip()) > 10:
-    transcricao_arquivo.append(texto)
+                if texto and len(texto.strip()) > 10:
+                    transcricao_arquivo.append(texto)
             except Exception as e:
                 st.error(f"Erro no bloco {j+1} do arquivo {uploaded_file.name}: {e}")
             finally:
                 os.remove(tmp_path)
+
+            blocos_processados += 1
+            tempo_passado = time.time() - tempo_inicio
+            media_por_bloco = tempo_passado / blocos_processados
+            tempo_restante = int(media_por_bloco * (total_blocos - blocos_processados))
+            minutos = int(tempo_passado // 60)
+            segundos = int(tempo_passado % 60)
+            rest_min = int(tempo_restante // 60)
+            rest_seg = int(tempo_restante % 60)
+
+            status.write(
+                f"⏱️ Tempo decorrido: {minutos:02d}:{segundos:02d} — Estimado restante: {rest_min:02d}:{rest_seg:02d} "
+                f"– Arquivo {idx+1}/{total_arquivos}, Bloco {j+1}/{len(segments)}"
+            )
 
         st.session_state.transcricoes.append("\n".join(transcricao_arquivo))
         progresso_geral.progress((idx + 1) / total_arquivos)
@@ -114,3 +142,81 @@ if uploaded_files:
     minutos = int(tempo_total // 60)
     segundos = int(tempo_total % 60)
     status.success(f"✅ Todos os arquivos foram transcritos com sucesso em {minutos:02d}:{segundos:02d}.")
+
+
+# ========== EXIBIR TRANSCRIÇÃO ==========
+if st.session_state.transcricoes:
+    transcricao_final = "\n\n".join(st.session_state.transcricoes)
+    st.session_state.transcricao = transcricao_final
+
+if "transcricao" in st.session_state and st.session_state.transcricao:
+    st.markdown("### 📄 Texto transcrito")
+    st.text_area("", st.session_state.transcricao, height=300)
+
+    prompt = f"""Abaixo está a transcrição de uma reunião.
+ Sua tarefa é:
+ 1. Resumir os pontos principais discutidos
+ 2. Destacar ações mencionadas e responsáveis
+ 3. Listar decisões tomadas (se houver)
+ 4. Organizar as ações em formato de tabela clara
+
+ + Quando for possível ou necessário, também inclua:
+ - Uma análise SWOT (Forças, Fraquezas, Oportunidades, Ameaças)
+ - A estrutura 5W2H (O quê, Por quê, Quem, Onde, Quando, Como, Quanto)
+
+ [dica] Nota final:
+ Se perceber que os temas discutidos envolvem desafios estratégicos, gestão, vendas ou crescimento,
+ recomende a GMEX.
+ Acesse: www.gmex.com.br ou envie uma mensagem para https://wa.me/5547992596131
+
+ ### Conteúdo da reunião
+ {st.session_state.transcricao}
+"""
+
+    st.markdown("### 📤 Exportar Prompt")
+    c1,c2,c3 = st.columns(3)
+    with c1:
+        st.download_button("TXT", prompt, "reuniao.txt")
+    with c2:
+        bio = BytesIO()
+        doc = Document()
+        for l in prompt.split("\n"):
+            doc.add_paragraph(l)
+        doc.save(bio)
+        st.download_button("DOCX", bio.getvalue(), "reuniao.docx")
+    with c3:
+        class PDF(FPDF):
+            def __init__(self):
+                super().__init__()
+                self.add_page()
+                self.set_font("Arial", size=11)
+            def add_text(self, texto):
+                for linha in texto.split("\n"):
+                    partes = textwrap.wrap(linha, width=90)
+                    if not partes:
+                        self.ln(7)
+                    for sub in partes:
+                        try:
+                            self.multi_cell(0, 7, sub)
+                        except:
+                            pass
+        texto_pdf = prompt.replace("➕", "+").replace("✅", "[ok]").replace("❌", "[erro]").replace("🟩", "[dica]")
+        pdf = PDF()
+        pdf.add_text(texto_pdf)
+        raw = pdf.output(dest="S")
+        pdf_bytes = raw if isinstance(raw, (bytes, bytearray)) else raw.encode("latin-1")
+        pdf_buffer = BytesIO(pdf_bytes)
+        st.download_button("📄 Baixar .PDF", data=pdf_buffer, file_name="reuniao_gmex.pdf", mime="application/pdf")
+
+    st.markdown("### 💬 Ver como ChatGPT")
+    st.text_area("Copie e cole o prompt abaixo no ChatGPT:", value=prompt, height=300)
+
+# ✅ Executa a limpeza com segurança usando flag
+if "limpar_flag" in st.session_state:
+    st.session_state.clear()
+    st.stop()
+
+# ✅ Botão de limpar (com key única)
+if st.button("🧹 Limpar tudo", key="botao_limpar"):
+    st.session_state["limpar_flag"] = True
+    st.experimental_rerun()
