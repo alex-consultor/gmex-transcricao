@@ -107,7 +107,7 @@ if uploaded_files:
             finally:
                 os.remove(tmp_path)
 
-        st.session_state.transcricoes.append("
+        st.session_state.transcricoes.append("texto aqui")
 ".join(transcricao_arquivo))
         progresso_geral.progress((idx + 1) / total_arquivos)
 
