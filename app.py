@@ -84,7 +84,7 @@ if uploaded_files:
     total_arquivos = len(uploaded_files)
     tempo_inicio = time.time()
 
-    for idx, uploaded_file in enumerate(uploaded_files):
+    for idx, uploaded_file in enumerate(sorted(uploaded_files, key=lambda x: x.name)):
         status.write(f"🔄 Processando arquivo {idx+1}/{total_arquivos}: {uploaded_file.name}")
         audio = AudioSegment.from_file(uploaded_file)
         segment_ms = 10 * 60 * 1000
