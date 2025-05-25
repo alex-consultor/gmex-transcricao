@@ -1,3 +1,4 @@
+
 import streamlit as st
 import whisper
 from pydub import AudioSegment
@@ -44,7 +45,6 @@ st.sidebar.markdown("### 👨‍💻 App desenvolvido por **Alex Medeiros**")
 st.title("📝 GMEX - Transcrição de Reuniões")
 st.markdown("<p>Transforme reuniões em texto com um clique.</p>", unsafe_allow_html=True)
 
-
 # ========== UPLOAD ==========
 if "transcricoes" not in st.session_state:
     st.session_state.transcricoes = []
@@ -77,7 +77,7 @@ Após instalar:
 """)
 
 if uploaded_files:
-    uploaded_files = sorted(uploaded_files, key=lambda x: x.name)  # garante ordem correta
+    uploaded_files = sorted(uploaded_files, key=lambda x: x.name)
     model = whisper.load_model("base")
     st.session_state.transcricoes.clear()
     status = st.empty()
@@ -107,7 +107,8 @@ if uploaded_files:
             finally:
                 os.remove(tmp_path)
 
-        st.session_state.transcricoes.append("\n".join(transcricao_arquivo))
+        st.session_state.transcricoes.append("
+".join(transcricao_arquivo))
         progresso_geral.progress((idx + 1) / total_arquivos)
 
     tempo_total = time.time() - tempo_inicio
@@ -117,7 +118,9 @@ if uploaded_files:
 
 # ========== EXIBIR TRANSCRIÇÃO ==========
 if st.session_state.transcricoes:
-    transcricao_final = "\n\n".join(st.session_state.transcricoes)
+    transcricao_final = "
+
+".join(st.session_state.transcricoes)
     st.session_state.transcricao = transcricao_final
 
 if "transcricao" in st.session_state and st.session_state.transcricao:
@@ -151,7 +154,8 @@ if "transcricao" in st.session_state and st.session_state.transcricao:
     with c2:
         bio = BytesIO()
         doc = Document()
-        for l in prompt.split("\n"):
+        for l in prompt.split("
+"):
             doc.add_paragraph(l)
         doc.save(bio)
         st.download_button("DOCX", bio.getvalue(), "reuniao.docx")
@@ -162,7 +166,8 @@ if "transcricao" in st.session_state and st.session_state.transcricao:
                 self.add_page()
                 self.set_font("Arial", size=11)
             def add_text(self, texto):
-                for linha in texto.split("\n"):
+                for linha in texto.split("
+"):
                     partes = textwrap.wrap(linha, width=90)
                     if not partes:
                         self.ln(7)
