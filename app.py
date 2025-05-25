@@ -45,12 +45,13 @@ st.sidebar.markdown("### 👨‍💻 App desenvolvido por **Alex Medeiros**")
 st.title("📝 GMEX - Transcrição de Reuniões")
 st.markdown("<p>Transforme reuniões em texto com um clique.</p>", unsafe_allow_html=True)
 
+
 # ========== UPLOAD ==========
 if "transcricoes" not in st.session_state:
     st.session_state.transcricoes = []
 
 uploaded_files = st.file_uploader(
-    "🎧 Envie os arquivos de áudio (MP3, WAV, M4A, AAC, OGG)",
+    "🎧 Envie os arquivos de áudio (em sequência)",
     type=["mp3", "wav", "m4a", "aac", "ogg"],
     accept_multiple_files=True
 )
@@ -77,6 +78,7 @@ Após instalar:
 """)
 
 if uploaded_files:
+    uploaded_files = sorted(uploaded_files, key=lambda x: x.name)  # garante ordem correta
     model = whisper.load_model("base")
     st.session_state.transcricoes.clear()
     status = st.empty()
@@ -84,7 +86,7 @@ if uploaded_files:
     total_arquivos = len(uploaded_files)
     tempo_inicio = time.time()
 
-    for idx, uploaded_file in enumerate(sorted(uploaded_files, key=lambda x: x.name)):
+    for idx, uploaded_file in enumerate(uploaded_files):
         status.write(f"🔄 Processando arquivo {idx+1}/{total_arquivos}: {uploaded_file.name}")
         audio = AudioSegment.from_file(uploaded_file)
         segment_ms = 10 * 60 * 1000
