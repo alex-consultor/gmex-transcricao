@@ -97,7 +97,13 @@ if uploaded_files:
 
         try:
             extensao = uploaded_file.name.split('.')[-1].lower()
-            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{extensao}") as tmp_in:
+            file_bytes = uploaded_file.read()  # Lê apenas uma vez
+
+with tempfile.NamedTemporaryFile(delete=False, suffix=f".{extensao}") as tmp_in:
+    tmp_in.write(file_bytes)
+    tmp_in.flush()
+    audio_original = AudioSegment.from_file(tmp_in.name, format=extensao)
+
                 tmp_in.write(uploaded_file.read())
                 tmp_in.flush()
                 audio_original = AudioSegment.from_file(tmp_in.name, format=extensao)
