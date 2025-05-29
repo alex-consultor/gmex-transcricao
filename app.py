@@ -99,7 +99,15 @@ if uploaded_files:
         status.write(f"🔄 Processando arquivo {idx+1}/{total_arquivos}: {uploaded_file.name}")
 
         try:
-            audio = AudioSegment.from_file(uploaded_file)
+    audio_original = AudioSegment.from_file(uploaded_file)
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_reencoded:
+        audio_original.export(tmp_reencoded.name, format="mp3")
+        audio = AudioSegment.from_file(tmp_reencoded.name)
+    os.remove(tmp_reencoded.name)
+except Exception as e:
+    st.error('❌ O áudio não pôde ser processado.')
+    st.text(f'Erro técnico: {str(e)}')
+    st.stop()
         except Exception as e:
             st.error('❌ O áudio não pôde ser processado.')
             st.text(f'Erro técnico: {str(e)}')
