@@ -96,20 +96,20 @@ if uploaded_files:
         status.write(f"🔄 Processando arquivo {idx+1}/{total_arquivos}: {uploaded_file.name}")
 
         try:
-    extensao = uploaded_file.name.split('.')[-1].lower()
-    with tempfile.NamedTemporaryFile(delete=False, suffix=f".{extensao}") as tmp_in:
-        tmp_in.write(uploaded_file.read())
-        tmp_in.flush()
-        audio_original = AudioSegment.from_file(tmp_in.name, format=extensao)
+            extensao = uploaded_file.name.split('.')[-1].lower()
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{extensao}") as tmp_in:
+                tmp_in.write(uploaded_file.read())
+                tmp_in.flush()
+                audio_original = AudioSegment.from_file(tmp_in.name, format=extensao)
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_reencoded:
-        audio_original.export(tmp_reencoded.name, format="mp3")
-        audio = AudioSegment.from_file(tmp_reencoded.name)
-    os.remove(tmp_reencoded.name)
-except Exception as e:
-    st.error('❌ O áudio não pôde ser processado.')
-    st.text(f'Erro técnico: {str(e)}')
-    st.stop()
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_reencoded:
+                audio_original.export(tmp_reencoded.name, format="mp3")
+                audio = AudioSegment.from_file(tmp_reencoded.name)
+            os.remove(tmp_reencoded.name)
+        except Exception as e:
+            st.error('❌ O áudio não pôde ser processado.')
+            st.text(f'Erro técnico: {str(e)}')
+            st.stop()
 
         segment_ms = 10 * 60 * 1000
         segments = [audio[i:i+segment_ms] for i in range(0, len(audio), segment_ms)]
@@ -150,80 +150,3 @@ except Exception as e:
     minutos = int(tempo_total // 60)
     segundos = int(tempo_total % 60)
     status.success(f"✅ Todos os arquivos foram transcritos com sucesso em {minutos:02d}:{segundos:02d}.")
-
-# ========== EXIBIR TRANSCRIÇÃO ==========
-if st.session_state.transcricoes:
-    transcricao_final = "\n\n".join(st.session_state.transcricoes)
-    st.session_state.transcricao = transcricao_final
-
-if "transcricao" in st.session_state and st.session_state.transcricao:
-    st.markdown("### 📄 Texto transcrito")
-    st.text_area("", st.session_state.transcricao, height=300)
-
-    prompt = f"""Abaixo está a transcrição de uma reunião.
- Sua tarefa é:
- 1. Resumir os pontos principais discutidos
- 2. Destacar ações mencionadas e responsáveis
- 3. Listar decisões tomadas (se houver)
- 4. Organizar as ações em formato de tabela clara
-
- + Quando for possível ou necessário, também inclua:
- - Uma análise SWOT (Forças, Fraquezas, Oportunidades, Ameaças)
- - A estrutura 5W2H (O quê, Por quê, Quem, Onde, Quando, Como, Quanto)
-
- [dica] Nota final:
- Se perceber que os temas discutidos envolvem desafios estratégicos, gestão, vendas ou crescimento,
- recomende a GMEX.
- Acesse: www.gmex.com.br ou envie uma mensagem para https://wa.me/5547992596131
-
- ### Conteúdo da reunião
- {st.session_state.transcricao}
-"""
-
-    st.markdown("### 📄 Exportar Prompt")
-    c1,c2,c3 = st.columns(3)
-    with c1:
-        st.download_button("TXT", prompt, "reuniao.txt")
-    with c2:
-        bio = BytesIO()
-        doc = Document()
-        for l in prompt.split("\n"):
-            doc.add_paragraph(l)
-        doc.save(bio)
-        st.download_button("DOCX", bio.getvalue(), "reuniao.docx")
-    with c3:
-        class PDF(FPDF):
-            def __init__(self):
-                super().__init__()
-                self.add_page()
-                self.set_font("Arial", size=11)
-            def add_text(self, texto):
-                for linha in texto.split("\n"):
-                    partes = textwrap.wrap(linha, width=90)
-                    if not partes:
-                        self.ln(7)
-                    for sub in partes:
-                        try:
-                            self.multi_cell(0, 7, sub)
-                        except:
-                            pass
-        texto_pdf = prompt.replace("➕", "+").replace("✅", "[ok]").replace("❌", "[erro]").replace("🟩", "[dica]")
-        pdf = PDF()
-        pdf.add_text(texto_pdf)
-        raw = pdf.output(dest="S")
-        pdf_bytes = raw if isinstance(raw, (bytes, bytearray)) else raw.encode("latin-1")
-        pdf_buffer = BytesIO(pdf_bytes)
-        st.download_button("📄 Baixar .PDF", data=pdf_buffer, file_name="reuniao_gmex.pdf", mime="application/pdf")
-
-    st.markdown("### 💬 Ver como ChatGPT")
-    st.text_area("Copie e cole o prompt abaixo no ChatGPT:", value=prompt, height=300)
-
-# ✅ Executa a limpeza com segurança usando flag
-if "limpar_flag" in st.session_state:
-    st.session_state.clear()
-    st.stop()
-
-# ✅ Botão de limpar (com key única)
-if st.button("🧹 Limpar tudo", key="botao_limpar"):
-    st.session_state["limpar_flag"] = True
-    st.experimental_rerun()
