@@ -98,7 +98,7 @@ if uploaded_files:
     for idx, uploaded_file in enumerate(uploaded_files):
         status.write(f"🔄 Processando arquivo {idx+1}/{total_arquivos}: {uploaded_file.name}")
 
-        try:
+    try:
     audio_original = AudioSegment.from_file(uploaded_file)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_reencoded:
         audio_original.export(tmp_reencoded.name, format="mp3")
