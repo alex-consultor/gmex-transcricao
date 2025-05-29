@@ -96,21 +96,23 @@ if uploaded_files:
         total_blocos += len(audio_temp) // (10 * 60 * 1000) + 1
 
     for idx, uploaded_file in enumerate(uploaded_files):
-        status.write(f"🔄 Processando arquivo {idx+1}/{total_arquivos}: {uploaded_file.name}")
+    status.write(f"🔄 Processando arquivo {idx+1}/{total_arquivos}: {uploaded_file.name}")
 
-try:
-    audio_original = AudioSegment.from_file(uploaded_file)
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_reencoded:
-        audio_original.export(tmp_reencoded.name, format="mp3")
-        audio = AudioSegment.from_file(tmp_reencoded.name)
-    os.remove(tmp_reencoded.name)
-except Exception as e:
-    st.error('❌ O áudio não pôde ser processado.')
-    st.text(f'Erro técnico: {str(e)}')
-    st.stop()
-        segment_ms = 10 * 60 * 1000
-        segments = [audio[i:i+segment_ms] for i in range(0, len(audio), segment_ms)]
-        transcricao_arquivo = []
+    try:
+        audio_original = AudioSegment.from_file(uploaded_file)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_reencoded:
+            audio_original.export(tmp_reencoded.name, format="mp3")
+            audio = AudioSegment.from_file(tmp_reencoded.name)
+        os.remove(tmp_reencoded.name)
+    except Exception as e:
+        st.error('❌ O áudio não pôde ser processado.')
+        st.text(f'Erro técnico: {str(e)}')
+        st.stop()
+
+    # 👇 Aqui o bloco continua normalmente
+    segment_ms = 10 * 60 * 1000
+    segments = [audio[i:i+segment_ms] for i in range(0, len(audio), segment_ms)]
+    transcricao_arquivo = []
 
         for j, seg in enumerate(segments):
             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
