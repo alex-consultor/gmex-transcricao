@@ -14,11 +14,11 @@ import time
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
 
-# Diagnóstico do ffmpeg (só após set_page_config)
+# Só aqui começam os comandos st.text, st.markdown, etc.
 ffmpeg_path = which("ffmpeg")
+AudioSegment.converter = ffmpeg_path
 st.text(f"FFmpeg path: {ffmpeg_path}")
 st.text(f"PATH: {os.environ.get('PATH')}")
-AudioSegment.converter = ffmpeg_path
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
