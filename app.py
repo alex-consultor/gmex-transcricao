@@ -17,8 +17,6 @@ st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
 # Diagnóstico do ffmpeg (agora pode usar st.text)
 ffmpeg_path = which("ffmpeg")
 AudioSegment.converter = ffmpeg_path
-st.text(f"FFmpeg path: {ffmpeg_path}")
-st.text(f"PATH: {os.environ.get('PATH')}")
 
 # ========== ESTILO VISUAL ==========
 st.markdown("""
