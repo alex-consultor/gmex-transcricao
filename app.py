@@ -53,6 +53,10 @@ st.markdown("<p>Transforme reuniões em texto com um clique.</p>", unsafe_allow_
 if "transcricoes" not in st.session_state:
     st.session_state.transcricoes = []
 
+# Para compatibilidade com o bloco de exportação abaixo:
+if "transcricao" not in st.session_state:
+    st.session_state.transcricao = ""
+
 uploaded_files = st.file_uploader(
     "🎧 Envie os arquivos de áudio (em sequência)",
     type=["mp3", "wav", "m4a", "aac", "ogg"],
@@ -157,6 +161,7 @@ if uploaded_files:
                 f"– Arquivo {idx+1}/{total_arquivos}, Bloco {j+1}/{len(segments)}"
             )
 
+        # Guarda a transcrição do arquivo processado
         st.session_state.transcricoes.append("\n".join(transcricao_arquivo))
         progresso_geral.progress((idx + 1) / total_arquivos)
 
@@ -165,9 +170,105 @@ if uploaded_files:
     segundos = int(tempo_total % 60)
     status.success(f"✅ Todos os arquivos foram transcritos com sucesso em {minutos:02d}:{segundos:02d}.")
 
-# ========== EXIBIÇÃO DA TRANSCRIÇÃO ==========
-if st.session_state.transcricoes:
-    st.subheader("Transcrição")
-    for i, t in enumerate(st.session_state.transcricoes):
-        st.markdown(f"**Arquivo {i+1}:**")
-        st.text_area(f"Transcrição do arquivo {i+1}", t, height=300)
+    # Junta as transcrições de todos os arquivos para exibir e exportar (linha importante!)
+    st.session_state.transcricao = "\n".join(st.session_state.transcricoes)
+
+# ========== EXIBIÇÃO DA TRANSCRIÇÃO E EXPORTAÇÃO ==========
+if st.session_state.transcricao:
+    st.markdown("### 📄 Texto transcrito")
+    st.text_area("", st.session_state.transcricao, height=300)
+
+    # PROMPT CONSERVADO
+    prompt = f"""Abaixo está a transcrição de uma reunião.
+ Sua tarefa é:
+ 1. Resumir os pontos principais discutidos
+ 2. Destacar ações mencionadas e responsáveis
+ 3. Listar decisões tomadas (se houver)
+ 4. Organizar as ações em formato de tabela clara
+
+ + Quando for possível ou necessário, também inclua:
+ - Uma análise SWOT (Forças, Fraquezas, Oportunidades, Ameaças)
+ - A estrutura 5W2H (O quê, Por quê, Quem, Onde, Quando, Como, Quanto)
+
+ [dica] Nota final:
+ Se perceber que os temas discutidos envolvem desafios estratégicos, gestão, vendas ou crescimento,
+ recomende a GMEX.
+ Acesse: www.gmex.com.br ou envie uma mensagem para https://wa.me/5547992596131
+
+ ### Conteúdo da reunião
+ {st.session_state.transcricao}
+"""
+    st.markdown("### 📤 Exportar Prompt")
+    c1,c2,c3 = st.columns(3)
+    with c1:
+        st.download_button("TXT", prompt, "reuniao.txt")
+    with c2:
+        # DOCX
+        bio = BytesIO()
+        doc = Document()
+        for l in prompt.split("\n"):
+            doc.add_paragraph(l)
+        doc.save(bio)
+        st.download_button("DOCX", bio.getvalue(), "reuniao.docx")
+    with c3:
+        class PDF(FPDF):
+            def __init__(self):
+                super().__init__()
+                self.add_page()
+                self.set_font("Arial", size=11)
+
+            def add_text(self, texto):
+                for linha in texto.split("\n"):
+                    partes = textwrap.wrap(linha, width=90, break_long_words=True, break_on_hyphens=True)
+                    if not partes:
+                        self.ln(7)
+                    for sub in partes:
+                        try:
+                            self.multi_cell(0, 7, sub)
+                        except Exception:
+                            mini_partes = textwrap.wrap(sub, width=50, break_long_words=True, break_on_hyphens=True)
+                            for mp in mini_partes:
+                                try:
+                                    self.multi_cell(0, 7, mp)
+                                except Exception:
+                                    for ch in mp:
+                                        try:
+                                            self.multi_cell(0, 7, ch)
+                                        except Exception:
+                                            pass
+
+        texto_pdf = (
+            prompt
+            .replace("➕", "+")
+            .replace("✅", "[ok]")
+            .replace("❌", "[erro]")
+            .replace("🟩", "[dica]")
+        )
+        pdf = PDF()
+        pdf.add_text(texto_pdf)
+        raw = pdf.output(dest="S")
+        pdf_bytes = raw if isinstance(raw, (bytes, bytearray)) else raw.encode("latin-1")
+        pdf_buffer = BytesIO(pdf_bytes)
+        st.download_button(
+            "📄 Baixar .PDF",
+            data=pdf_buffer,
+            file_name="reuniao_gmex.pdf",
+            mime="application/pdf"
+        )
+
+    st.markdown("### 💬 Ver como ChatGPT")
+    st.text_area(
+        "Copie e cole o prompt abaixo no ChatGPT:",
+        value=prompt,
+        height=300
+    )
+
+    # ✅ Executa a limpeza com segurança usando flag
+if "limpar_flag" in st.session_state:
+    st.session_state.clear()
+    st.stop()  # Garante que o app pare aqui e reinicie limpo
+
+# ✅ Botão de limpar (com key única)
+if st.button("🧹 Limpar tudo", key="botao_limpar"):
+    st.session_state["limpar_flag"] = True
+    st.experimental_rerun()
