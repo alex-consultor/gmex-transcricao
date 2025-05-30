@@ -108,7 +108,7 @@ if uploaded_files:
         st.exception(e)
         continue
 
-for idx, uploaded_file in enumerate(uploaded_files):
+    for idx, uploaded_file in enumerate(uploaded_files):
     # st.text(f"{uploaded_file.name} - {uploaded_file.size} bytes")  # Remover esta linha
     if uploaded_file.size == 0:
         st.error(f"O arquivo {uploaded_file.name} está vazio.")
