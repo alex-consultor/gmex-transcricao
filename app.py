@@ -11,7 +11,10 @@ from fpdf import FPDF
 import textwrap
 import time
 
-# Diagnóstico do ffmpeg
+# ========== CONFIGURAÇÃO DA PÁGINA ==========
+st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
+
+# Agora pode seguir normalmente!
 ffmpeg_path = which("ffmpeg")
 st.text(f"FFmpeg path: {ffmpeg_path}")
 st.text(f"PATH: {os.environ.get('PATH')}")
