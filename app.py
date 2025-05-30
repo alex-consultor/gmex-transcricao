@@ -101,8 +101,13 @@ if uploaded_files:
             st.error(f"O arquivo {audio_file.name} está vazio.")
             continue
         ext = audio_file.name.split('.')[-1].lower()
+        # Forçar formato correto para pydub
+        if ext == "m4a":
+            pydub_format = "m4a"
+        else:
+            pydub_format = ext
         try:
-            audio_temp = AudioSegment.from_file(audio_file, format=ext)
+            audio_temp = AudioSegment.from_file(audio_file, format=pydub_format)
             total_blocos += len(audio_temp) // (10 * 60 * 1000) + 1
         except Exception as e:
             st.error(f"Erro ao abrir {audio_file.name}: {e}")
@@ -115,9 +120,13 @@ if uploaded_files:
             continue
 
         ext = uploaded_file.name.split('.')[-1].lower()
+        if ext == "m4a":
+            pydub_format = "m4a"
+        else:
+            pydub_format = ext
         uploaded_file.seek(0)
         try:
-            audio = AudioSegment.from_file(uploaded_file, format=ext)
+            audio = AudioSegment.from_file(uploaded_file, format=pydub_format)
         except Exception as e:
             st.error('❌ O áudio não pôde ser processado.')
             st.text(f'Erro técnico: {str(e)}')
@@ -129,16 +138,17 @@ if uploaded_files:
         transcricao_arquivo = []
 
         for j, seg in enumerate(segments):
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-                seg.export(tmp.name, format="mp3")
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+                seg.export(tmp.name, format="wav")
                 tmp_path = tmp.name
+                # Diagnóstico: tamanho do arquivo temporário
+                st.info(f"Tamanho do arquivo temporário: {os.path.getsize(tmp_path)} bytes")
 
             try:
                 with st.spinner(f"Transcrevendo bloco {j+1} de {len(segments)} do arquivo {uploaded_file.name}..."):
-                    # Alteração: força idioma português
+                    # Força idioma português
                     res = model.transcribe(tmp_path, language="pt")
                     texto = res["text"].strip()
-                    # Diagnóstico: mostra resultado bruto do Whisper
                     st.info(f"Bloco {j+1} - texto retornado: {repr(texto)}")
                     if texto:
                         transcricao_arquivo.append(texto)
@@ -148,11 +158,6 @@ if uploaded_files:
                 st.error(f"Erro no bloco {j+1} do arquivo {uploaded_file.name}: {e}")
                 st.exception(e)
             finally:
-                # Diagnóstico: mostra caminho e tamanho do arquivo temporário
-                try:
-                    st.info(f"Arquivo temporário: {tmp_path}, tamanho: {os.path.getsize(tmp_path)} bytes")
-                except Exception:
-                    pass
                 os.remove(tmp_path)
 
             blocos_processados += 1
