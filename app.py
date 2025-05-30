@@ -14,7 +14,7 @@ import time
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
 
-# Diagnóstico do ffmpeg (agora pode usar st.text)
+# Configura ffmpeg para o pydub (não exibe na tela)
 ffmpeg_path = which("ffmpeg")
 AudioSegment.converter = ffmpeg_path
 
@@ -82,7 +82,8 @@ Após instalar:
 
 if uploaded_files:
     uploaded_files = sorted(uploaded_files, key=lambda x: x.name)
-    model = whisper.load_model("base")
+    # Use o modelo tiny para melhor compatibilidade com Streamlit Cloud
+    model = whisper.load_model("tiny")
     st.session_state.transcricoes.clear()
     status = st.empty()
     progresso_geral = st.progress(0)
@@ -92,69 +93,81 @@ if uploaded_files:
     blocos_processados = 0
 
     # Diagnóstico e contagem de blocos
-for audio_file in uploaded_files:
-    if audio_file.size == 0:
-        st.error(f"O arquivo {audio_file.name} está vazio.")
-        continue
-    ext = audio_file.name.split('.')[-1].lower()
-    try:
-        audio_temp = AudioSegment.from_file(audio_file, format=ext)
-        total_blocos += len(audio_temp) // (10 * 60 * 1000) + 1
-    except Exception as e:
-        st.error(f"Erro ao abrir {audio_file.name}: {e}")
-        st.exception(e)
-        continue
-
-for idx, uploaded_file in enumerate(uploaded_files):
-    if uploaded_file.size == 0:
-        st.error(f"O arquivo {uploaded_file.name} está vazio.")
-        continue
-
-    ext = uploaded_file.name.split('.')[-1].lower()
-    uploaded_file.seek(0)
-    try:
-        audio = AudioSegment.from_file(uploaded_file, format=ext)
-    except Exception as e:
-        st.error('❌ O áudio não pôde ser processado.')
-        st.text(f'Erro técnico: {str(e)}')
-        st.exception(e)
-        st.stop()
-
-    segment_ms = 10 * 60 * 1000
-    segments = [audio[i:i+segment_ms] for i in range(0, len(audio), segment_ms)]
-    transcricao_arquivo = []
-
-    for j, seg in enumerate(segments):
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
-            seg.export(tmp.name, format="mp3")
-            tmp_path = tmp.name
+    for audio_file in uploaded_files:
+        if audio_file.size == 0:
+            st.error(f"O arquivo {audio_file.name} está vazio.")
+            continue
+        ext = audio_file.name.split('.')[-1].lower()
         try:
-            st.info(f"Transcrevendo bloco {j+1} de {len(segments)} do arquivo {uploaded_file.name}...")
-            res = model.transcribe(tmp_path)
-            texto = res["text"].strip()
-            if texto and len(texto.strip()) > 10:
-                transcricao_arquivo.append(texto)
-            else:
-                st.warning(f"Bloco {j+1} sem texto relevante.")
+            audio_temp = AudioSegment.from_file(audio_file, format=ext)
+            total_blocos += len(audio_temp) // (10 * 60 * 1000) + 1
         except Exception as e:
-            st.error(f"Erro no bloco {j+1} do arquivo {uploaded_file.name}: {e}")
+            st.error(f"Erro ao abrir {audio_file.name}: {e}")
             st.exception(e)
-        finally:
-            os.remove(tmp_path)
+            continue
 
-        blocos_processados += 1
-        tempo_passado = time.time() - tempo_inicio
-        media_por_bloco = tempo_passado / blocos_processados
-        tempo_restante = int(media_por_bloco * (total_blocos - blocos_processados))
-        minutos = int(tempo_passado // 60)
-        segundos = int(tempo_passado % 60)
-        rest_min = int(tempo_restante // 60)
-        rest_seg = int(tempo_restante % 60)
+    for idx, uploaded_file in enumerate(uploaded_files):
+        if uploaded_file.size == 0:
+            st.error(f"O arquivo {uploaded_file.name} está vazio.")
+            continue
 
-        status.write(
-            f"⏱️ Tempo decorrido: {minutos:02d}:{segundos:02d} — Estimado restante: {rest_min:02d}:{rest_seg:02d} "
-            f"– Arquivo {idx+1}/{total_arquivos}, Bloco {j+1}/{len(segments)}"
-        )
+        ext = uploaded_file.name.split('.')[-1].lower()
+        uploaded_file.seek(0)
+        try:
+            audio = AudioSegment.from_file(uploaded_file, format=ext)
+        except Exception as e:
+            st.error('❌ O áudio não pôde ser processado.')
+            st.text(f'Erro técnico: {str(e)}')
+            st.exception(e)
+            st.stop()
 
-    st.session_state.transcricoes.append("\n".join(transcricao_arquivo))
-    progresso_geral.progress((idx + 1) / total_arquivos)
+        segment_ms = 10 * 60 * 1000
+        segments = [audio[i:i+segment_ms] for i in range(0, len(audio), segment_ms)]
+        transcricao_arquivo = []
+
+        for j, seg in enumerate(segments):
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
+                seg.export(tmp.name, format="mp3")
+                tmp_path = tmp.name
+            try:
+                with st.spinner(f"Transcrevendo bloco {j+1} de {len(segments)} do arquivo {uploaded_file.name}..."):
+                    res = model.transcribe(tmp_path)
+                    texto = res["text"].strip()
+                    if texto and len(texto.strip()) > 10:
+                        transcricao_arquivo.append(texto)
+                    else:
+                        st.warning(f"Bloco {j+1} sem texto relevante.")
+            except Exception as e:
+                st.error(f"Erro no bloco {j+1} do arquivo {uploaded_file.name}: {e}")
+                st.exception(e)
+            finally:
+                os.remove(tmp_path)
+
+            blocos_processados += 1
+            tempo_passado = time.time() - tempo_inicio
+            media_por_bloco = tempo_passado / blocos_processados if blocos_processados else 0
+            tempo_restante = int(media_por_bloco * (total_blocos - blocos_processados))
+            minutos = int(tempo_passado // 60)
+            segundos = int(tempo_passado % 60)
+            rest_min = int(tempo_restante // 60)
+            rest_seg = int(tempo_restante % 60)
+
+            status.write(
+                f"⏱️ Tempo decorrido: {minutos:02d}:{segundos:02d} — Estimado restante: {rest_min:02d}:{rest_seg:02d} "
+                f"– Arquivo {idx+1}/{total_arquivos}, Bloco {j+1}/{len(segments)}"
+            )
+
+        st.session_state.transcricoes.append("\n".join(transcricao_arquivo))
+        progresso_geral.progress((idx + 1) / total_arquivos)
+
+    tempo_total = time.time() - tempo_inicio
+    minutos = int(tempo_total // 60)
+    segundos = int(tempo_total % 60)
+    status.success(f"✅ Todos os arquivos foram transcritos com sucesso em {minutos:02d}:{segundos:02d}.")
+
+# ========== EXIBIÇÃO DA TRANSCRIÇÃO ==========
+if st.session_state.transcricoes:
+    st.subheader("Transcrição")
+    for i, t in enumerate(st.session_state.transcricoes):
+        st.markdown(f"**Arquivo {i+1}:**")
+        st.text_area(f"Transcrição do arquivo {i+1}", t, height=300)
