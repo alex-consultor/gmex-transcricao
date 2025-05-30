@@ -14,7 +14,7 @@ import time
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
 
-# Agora pode seguir normalmente!
+# Diagnóstico do ffmpeg (só após set_page_config)
 ffmpeg_path = which("ffmpeg")
 st.text(f"FFmpeg path: {ffmpeg_path}")
 st.text(f"PATH: {os.environ.get('PATH')}")
