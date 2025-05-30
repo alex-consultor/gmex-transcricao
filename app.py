@@ -95,15 +95,15 @@ if uploaded_files:
 
     # Diagnóstico e contagem de blocos
     for audio_file in uploaded_files:
-    # st.text(f"{audio_file.name} - {audio_file.size} bytes")  # Remover esta linha
-    if audio_file.size == 0:
+        # st.text(f"{audio_file.name} - {audio_file.size} bytes")  # Remover esta linha
+        if audio_file.size == 0:
         st.error(f"O arquivo {audio_file.name} está vazio.")
         continue
-    ext = audio_file.name.split('.')[-1].lower()
+        ext = audio_file.name.split('.')[-1].lower()
     try:
         audio_temp = AudioSegment.from_file(audio_file, format=ext)
         total_blocos += len(audio_temp) // (10 * 60 * 1000) + 1
-    except Exception as e:
+        except Exception as e:
         st.error(f"Erro ao abrir {audio_file.name}: {e}")
         st.exception(e)
         continue
