@@ -105,6 +105,7 @@ if uploaded_files:
             total_blocos += len(audio_temp) // (10 * 60 * 1000) + 1
         except Exception as e:
             st.error(f"Erro ao abrir {audio_file.name}: {e}")
+            st.exception(e)
             continue
 
     for idx, uploaded_file in enumerate(uploaded_files):
@@ -120,6 +121,7 @@ if uploaded_files:
         except Exception as e:
             st.error('❌ O áudio não pôde ser processado.')
             st.text(f'Erro técnico: {str(e)}')
+            st.exception(e)
             st.stop()
 
         segment_ms = 10 * 60 * 1000
@@ -131,12 +133,16 @@ if uploaded_files:
                 seg.export(tmp.name, format="mp3")
                 tmp_path = tmp.name
             try:
+                st.info(f"Transcrevendo bloco {j+1} de {len(segments)} do arquivo {uploaded_file.name}...")
                 res = model.transcribe(tmp_path)
                 texto = res["text"].strip()
                 if texto and len(texto.strip()) > 10:
                     transcricao_arquivo.append(texto)
+                else:
+                    st.warning(f"Bloco {j+1} sem texto relevante.")
             except Exception as e:
                 st.error(f"Erro no bloco {j+1} do arquivo {uploaded_file.name}: {e}")
+                st.exception(e)
             finally:
                 os.remove(tmp_path)
 
@@ -161,3 +167,10 @@ if uploaded_files:
     minutos = int(tempo_total // 60)
     segundos = int(tempo_total % 60)
     status.success(f"✅ Todos os arquivos foram transcritos com sucesso em {minutos:02d}:{segundos:02d}.")
+
+# ========== EXIBIÇÃO DA TRANSCRIÇÃO ==========
+if st.session_state.transcricoes:
+    st.subheader("Transcrição")
+    for i, t in enumerate(st.session_state.transcricoes):
+        st.markdown(f"**Arquivo {i+1}:**")
+        st.text_area(f"Transcrição do arquivo {i+1}", t, height=300)
