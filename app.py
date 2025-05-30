@@ -11,6 +11,12 @@ from docx import Document
 from fpdf import FPDF
 import textwrap
 import time
+import os
+from pydub.utils import which
+
+print("FFmpeg path:", which("ffmpeg"))
+st.text(f"FFmpeg path: {which('ffmpeg')}")
+st.text(f"PATH: {os.environ.get('PATH')}")
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
@@ -93,7 +99,11 @@ if uploaded_files:
         total_blocos += len(audio_temp) // (10 * 60 * 1000) + 1
 
     for idx, uploaded_file in enumerate(uploaded_files):
-        status.write(f"🔄 Processando arquivo {idx+1}/{total_arquivos}: {uploaded_file.name}")
+    st.text(f"{uploaded_file.name} - {uploaded_file.size} bytes")
+    uploaded_file.seek(0)
+    raw = uploaded_file.read()
+    st.text(f"Lido {len(raw)} bytes do arquivo.")
+    uploaded_file.seek(0)
 
         try:
             audio = AudioSegment.from_file(uploaded_file)
