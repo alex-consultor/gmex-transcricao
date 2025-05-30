@@ -2,7 +2,6 @@ import streamlit as st
 import whisper
 from pydub import AudioSegment
 from pydub.utils import which
-AudioSegment.converter = which("ffmpeg")
 from PIL import Image
 import tempfile
 import os
@@ -11,12 +10,12 @@ from docx import Document
 from fpdf import FPDF
 import textwrap
 import time
-import os
-from pydub.utils import which
 
-print("FFmpeg path:", which("ffmpeg"))
-st.text(f"FFmpeg path: {which('ffmpeg')}")
+# Diagnóstico do ffmpeg
+ffmpeg_path = which("ffmpeg")
+st.text(f"FFmpeg path: {ffmpeg_path}")
 st.text(f"PATH: {os.environ.get('PATH')}")
+AudioSegment.converter = ffmpeg_path
 
 # ========== CONFIGURAÇÃO DA PÁGINA ==========
 st.set_page_config(page_title="GMEX - Transcrição", page_icon="📝")
@@ -94,19 +93,30 @@ if uploaded_files:
     total_blocos = 0
     blocos_processados = 0
 
+    # Diagnóstico e contagem de blocos
     for audio_file in uploaded_files:
-        audio_temp = AudioSegment.from_file(audio_file)
-        total_blocos += len(audio_temp) // (10 * 60 * 1000) + 1
+        st.text(f"{audio_file.name} - {audio_file.size} bytes")
+        if audio_file.size == 0:
+            st.error(f"O arquivo {audio_file.name} está vazio.")
+            continue
+        ext = audio_file.name.split('.')[-1].lower()
+        try:
+            audio_temp = AudioSegment.from_file(audio_file, format=ext)
+            total_blocos += len(audio_temp) // (10 * 60 * 1000) + 1
+        except Exception as e:
+            st.error(f"Erro ao abrir {audio_file.name}: {e}")
+            continue
 
     for idx, uploaded_file in enumerate(uploaded_files):
-    st.text(f"{uploaded_file.name} - {uploaded_file.size} bytes")
-    uploaded_file.seek(0)
-    raw = uploaded_file.read()
-    st.text(f"Lido {len(raw)} bytes do arquivo.")
-    uploaded_file.seek(0)
+        st.text(f"{uploaded_file.name} - {uploaded_file.size} bytes")
+        if uploaded_file.size == 0:
+            st.error(f"O arquivo {uploaded_file.name} está vazio.")
+            continue
 
+        ext = uploaded_file.name.split('.')[-1].lower()
+        uploaded_file.seek(0)
         try:
-            audio = AudioSegment.from_file(uploaded_file)
+            audio = AudioSegment.from_file(uploaded_file, format=ext)
         except Exception as e:
             st.error('❌ O áudio não pôde ser processado.')
             st.text(f'Erro técnico: {str(e)}')
