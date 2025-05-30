@@ -132,18 +132,27 @@ if uploaded_files:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp:
                 seg.export(tmp.name, format="mp3")
                 tmp_path = tmp.name
+
             try:
                 with st.spinner(f"Transcrevendo bloco {j+1} de {len(segments)} do arquivo {uploaded_file.name}..."):
+                    # Alteração: força idioma português
                     res = model.transcribe(tmp_path, language="pt")
                     texto = res["text"].strip()
+                    # Diagnóstico: mostra resultado bruto do Whisper
+                    st.info(f"Bloco {j+1} - texto retornado: {repr(texto)}")
                     if texto:
-    st.info(f"Bloco {j+1}: '{texto[:80]}'")
-else:
-    st.warning(f"Bloco {j+1} sem texto (vazio mesmo).")
+                        transcricao_arquivo.append(texto)
+                    else:
+                        st.warning(f"Bloco {j+1} sem texto (vazio mesmo).")
             except Exception as e:
                 st.error(f"Erro no bloco {j+1} do arquivo {uploaded_file.name}: {e}")
                 st.exception(e)
             finally:
+                # Diagnóstico: mostra caminho e tamanho do arquivo temporário
+                try:
+                    st.info(f"Arquivo temporário: {tmp_path}, tamanho: {os.path.getsize(tmp_path)} bytes")
+                except Exception:
+                    pass
                 os.remove(tmp_path)
 
             blocos_processados += 1
