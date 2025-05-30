@@ -137,10 +137,11 @@ if uploaded_files:
                 with st.spinner(f"Transcrevendo bloco {j+1} de {len(segments)} do arquivo {uploaded_file.name}..."):
                     res = model.transcribe(tmp_path)
                     texto = res["text"].strip()
-                    if texto and len(texto.strip()) > 10:
-                        transcricao_arquivo.append(texto)
-                    else:
-                        st.warning(f"Bloco {j+1} sem texto relevante.")
+                    if texto:
+                    transcricao_arquivo.append(texto)
+                    st.info(f"Bloco {j+1}: {repr(texto[:80])}...")  # Mostra início do texto do bloco
+            else:
+                    st.warning(f"Bloco {j+1} sem texto (vazio mesmo).")
             except Exception as e:
                 st.error(f"Erro no bloco {j+1} do arquivo {uploaded_file.name}: {e}")
                 st.exception(e)
