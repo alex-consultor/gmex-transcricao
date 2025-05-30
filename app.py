@@ -53,7 +53,6 @@ st.markdown("<p>Transforme reuniões em texto com um clique.</p>", unsafe_allow_
 if "transcricoes" not in st.session_state:
     st.session_state.transcricoes = []
 
-# Para compatibilidade com o bloco de exportação abaixo:
 if "transcricao" not in st.session_state:
     st.session_state.transcricao = ""
 
@@ -137,16 +136,16 @@ if uploaded_files:
                 with st.spinner(f"Transcrevendo bloco {j+1} de {len(segments)} do arquivo {uploaded_file.name}..."):
                     res = model.transcribe(tmp_path)
                     texto = res["text"].strip()
-        if texto:
-            transcricao_arquivo.append(texto)
-            st.info(f"Bloco {j+1}: {repr(texto[:80])}...")
-            else:
-            st.warning(f"Bloco {j+1} sem texto (vazio mesmo).")
+                    if texto:
+                        transcricao_arquivo.append(texto)
+                        st.info(f"Bloco {j+1}: {repr(texto[:80])}...")
+                    else:
+                        st.warning(f"Bloco {j+1} sem texto (vazio mesmo).")
             except Exception as e:
-            st.error(f"Erro no bloco {j+1} do arquivo {uploaded_file.name}: {e}")
-            st.exception(e)
+                st.error(f"Erro no bloco {j+1} do arquivo {uploaded_file.name}: {e}")
+                st.exception(e)
             finally:
-            os.remove(tmp_path)
+                os.remove(tmp_path)
 
             blocos_processados += 1
             tempo_passado = time.time() - tempo_inicio
@@ -162,7 +161,6 @@ if uploaded_files:
                 f"– Arquivo {idx+1}/{total_arquivos}, Bloco {j+1}/{len(segments)}"
             )
 
-        # Guarda a transcrição do arquivo processado
         st.session_state.transcricoes.append("\n".join(transcricao_arquivo))
         progresso_geral.progress((idx + 1) / total_arquivos)
 
