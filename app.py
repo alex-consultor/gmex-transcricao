@@ -107,7 +107,7 @@ for audio_file in uploaded_files:
         st.exception(e)
         continue
 
-    for idx, uploaded_file in enumerate(uploaded_files):
+for idx, uploaded_file in enumerate(uploaded_files):
     if uploaded_file.size == 0:
         st.error(f"O arquivo {uploaded_file.name} está vazio.")
         continue
