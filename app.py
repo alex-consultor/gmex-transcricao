@@ -96,11 +96,7 @@ if uploaded_files:
         status.write(f"🔄 Processando arquivo {idx+1}/{total_arquivos}: {uploaded_file.name}")
 
         try:
-    audio = AudioSegment.from_file(uploaded_file)
-except Exception as e:
-    st.error('❌ O áudio não pôde ser processado.')
-    st.text(f'Erro técnico: {str(e)}')
-    st.stop()
+            audio = AudioSegment.from_file(uploaded_file)
         except Exception as e:
             st.error('❌ O áudio não pôde ser processado.')
             st.text(f'Erro técnico: {str(e)}')
